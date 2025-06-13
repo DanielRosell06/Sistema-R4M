@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../../../lib/prisma';
-import { data } from 'autoprefixer';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const SALT_ROUNDS = 10;
@@ -9,6 +8,11 @@ const SALT_ROUNDS = 10;
 export async function POST (request) {
     
 try{
+  // checa o acesso a rota apenas por admins
+  
+/// a ser implementado ainda
+
+
  const { username, senha, nome,status, tipo } = await request.json();
 
 

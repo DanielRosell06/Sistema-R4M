@@ -32,8 +32,13 @@ export default function LoginPage() {
 
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        router.push("/");
+        // redireciona conforme nivel de acesso
+    if (data.user.tipo === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/");
     }
+  }
      return (
     <div className="flex items-center justify-center min-h-screen bg-gray-900">
       <form

@@ -2,47 +2,74 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CreateUserForm() {
+  const router = useRouter();
+
+  // Form state
   const [nome, setNome] = useState("");
   const [username, setUsername] = useState("");
   const [senha, setSenha] = useState("");
-  const [tipo, setTipo] = useState("comum"); // valor padrão “comum”
+  const [tipo, setTipo] = useState("comum");
   const [mensagem, setMensagem] = useState(null);
   const [carregando, setCarregando] = useState(false);
+
+  // Protege a página: só admin logado pode usar
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
+    if (!token || !user) {
+      // não está logado
+      router.push("/login");
+      return;
+    }
+    if (user.tipo !== "admin") {
+      // não é admin
+      router.push("/");
+      return;
+    }
+  }, [router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setCarregando(true);
     setMensagem(null);
 
+    const token = localStorage.getItem("token");
+
     try {
       const res = await fetch("/api/auth/registrar", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({ nome, username, senha, tipo }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        // Se a API retornou algum erro (4xx ou 5xx)
         throw new Error(data.message || "Erro ao criar usuário");
       }
 
-      // data.user.id vem do handler de /api/auth/registrar
       setMensagem({
         tipo: "sucesso",
         texto: `Usuário criado com sucesso! ID: ${data.user.id}`,
       });
 
-      // Limpar campos do formulário após sucesso
+      // limpa formulário
       setNome("");
       setUsername("");
       setSenha("");
       setTipo("comum");
+
+      // volta para o painel admin após 2 segundos
+      setTimeout(() => {
+        router.push("/admin");
+      }, 2000);
     } catch (err) {
       setMensagem({ tipo: "erro", texto: err.message });
     } finally {
@@ -51,97 +78,107 @@ export default function CreateUserForm() {
   }
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl">
-      <h2 className="text-2xl font-semibold mb-6 text-white text-center">
-        Criar <span className="text-orange-500">Usuário</span>
-      </h2>
-
-      {mensagem && (
-        <div
-          className={`p-3 mb-6 rounded-lg border ${
-            mensagem.tipo === "sucesso"
-              ? "bg-green-900/20 text-green-400 border-green-800"
-              : "bg-red-900/20 text-red-400 border-red-800"
-          }`}
+    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="max-w-md w-full">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700"
         >
-          {mensagem.texto}
-        </div>
-      )}
+          <h2 className="text-2xl font-bold mb-6 text-center text-white">
+            Criar <span className="text-orange-500">Usuário</span>
+          </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Nome */}
-        <div>
-          <label htmlFor="nome" className="block mb-2 font-medium text-gray-300">
-            Nome:
-          </label>
-          <input
-            type="text"
-            id="nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            required
-            className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-            placeholder="Digite seu nome completo"
-          />
-        </div>
+          {mensagem && (
+            <div
+              className={`mb-4 text-center p-2 rounded border ${
+                mensagem.tipo === "sucesso"
+                  ? "text-green-400 bg-green-900/20 border-green-800"
+                  : "text-red-400 bg-red-900/20 border-red-800"
+              }`}
+            >
+              {mensagem.texto}
+            </div>
+          )}
 
-        {/* Username */}
-        <div>
-          <label htmlFor="username" className="block mb-2 font-medium text-gray-300">
-            Username:
-          </label>
-          <input
-            type="text"
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-            placeholder="Escolha um username único"
-          />
-        </div>
+          <div className="mb-4">
+            <label className="block mb-2 font-medium text-gray-300" htmlFor="nome">
+              Nome
+            </label>
+            <input
+              id="nome"
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+              placeholder="Digite seu nome completo"
+            />
+          </div>
 
-        {/* Senha */}
-        <div>
-          <label htmlFor="senha" className="block mb-2 font-medium text-gray-300">
-            Senha:
-          </label>
-          <input
-            type="password"
-            id="senha"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-            className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-            placeholder="Digite uma senha segura"
-          />
-        </div>
+          <div className="mb-4">
+            <label className="block mb-2 font-medium text-gray-300" htmlFor="username">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+              placeholder="Escolha um username único"
+            />
+          </div>
 
-        {/* Tipo (Admin ou Comum) */}
-        <div>
-          <label htmlFor="tipo" className="block mb-2 font-medium text-gray-300">
-            Tipo de Usuário:
-          </label>
-          <select
-            id="tipo"
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+          <div className="mb-4">
+            <label className="block mb-2 font-medium text-gray-300" htmlFor="senha">
+              Senha
+            </label>
+            <input
+              id="senha"
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+              placeholder="Digite uma senha segura"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-2 font-medium text-gray-300" htmlFor="tipo">
+              Tipo de Usuário
+            </label>
+            <select
+              id="tipo"
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+            >
+              <option value="comum">Comum</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            disabled={carregando}
+            className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            <option value="comum">Comum</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
+            {carregando ? "Criando..." : "Criar Usuário"}
+          </button>
 
-        {/* Botão */}
-        <button
-          type="submit"
-          disabled={carregando}
-          className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          {carregando ? "Criando..." : "Criar Usuário"}
-        </button>
-      </form>
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => router.push("/admin")}
+              className="text-orange-400 hover:text-orange-300 transition-colors duration-200 font-medium"
+            >
+              ← Voltar ao Painel Admin
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
