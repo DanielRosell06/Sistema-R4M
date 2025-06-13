@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Input } from "../../components/ui/input"
 import Produto from "../../components/personalizados/produto"
+import { useState } from 'react';
 // Make sure Produto is exported as a named export from the referenced file.
 
 
@@ -56,6 +57,9 @@ export default function ProdutosPage() {
         }
     ];
 
+    const [createModal, setCreateModal] = useState(false)
+    const [usoFields, setUsoFields] = useState([""])
+
     return (
         <div className="min-h-screen bg-stone-900 text-gray-100">
             <nav className="flex justify-between p-4 bg-stone-800 mb-8">
@@ -90,7 +94,10 @@ export default function ProdutosPage() {
                 </p>
 
                 <div className="flex items-center gap-4 mt-8">
-                    <button className="bg-orange-400 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors">
+                    <button
+                        className="bg-orange-400 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors hover:cursor-pointer"
+                        onClick={() => setCreateModal(true)}
+                    >
                         + Adicionar produto
                     </button>
                     <div className="relative w-64">
@@ -119,6 +126,94 @@ export default function ProdutosPage() {
                     />
                 ))}
             </div>
+            {
+                createModal ?
+                    <>
+                        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+                            <div className="bg-stone-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+                                <h2 className="text-2xl font-bold mb-4 text-orange-400">Adicionar Produto</h2>
+                                <form>
+                                    <div className="mb-4">
+                                        <label className="block mb-1 text-gray-200">Título</label>
+                                        <Input type="text" className="w-full" placeholder="Nome do produto" />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block mb-1 text-gray-200">Imagem (URL)</label>
+                                        <Input type="text" className="w-full" placeholder="URL da imagem" />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block mb-1 text-gray-200">Descrição</label>
+                                        <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Descrição do produto"></textarea>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block mb-1 text-gray-200 ">Modo de Uso</label>
+                                        {[...Array(usoFields?.length || 0)].map((_, i) => (
+                                            <div
+                                                className="flex flex-row justify-between"
+                                                key={i}>
+                                                <Input
+                                                    type="text"
+                                                    className="w-[88%] mb-2"
+                                                    placeholder={`Modo de uso #${i + 1}`}
+                                                    value={usoFields[i]}
+                                                    onChange={e => {
+                                                        const updated = [...usoFields];
+                                                        updated[i] = e.target.value;
+                                                        setUsoFields(updated);
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="flex items-center justify-center text-red-400 hover:text-white hover:bg-red-400 transition-all rounded h-9 w-9"
+                                                    onClick={() => {
+                                                        const updated = usoFields.filter((_, idx) => idx !== i);
+                                                        setUsoFields(updated);
+                                                    }}
+                                                    title="Remover modo de uso"
+                                                >
+                                                    {/* Ícone de lixeira SVG */}
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm")}
+                                            disabled={usoFields.length >= 8}
+                                            onClick={() => {
+                                                if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
+                                            }}
+                                        >
+                                            + Adicionar modo de uso
+                                        </button>
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            type="button"
+                                            className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+                                            onClick={() => {
+                                                setCreateModal(false)
+                                                setUsoFields([""])
+                                            }}
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
+                                        >
+                                            Salvar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </>
+                    : ""
+            }
         </div>
+
     );
 }
