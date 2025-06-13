@@ -43,13 +43,13 @@ export default function Produto({ titulo, imagemURL, descricao, modoUso }) {
                         <h1 className='mr-4 mt-auto mb-auto'>{titulo}</h1>
                     </div>
                     <div className='mt-auto mb-auto mr-2'>
-                        <Button variant="ghost" size="icon" className="mr-2" aria-label="Editar">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <Button variant="ghost" size="icon" className="mr-2 hover:bg-blue-400 text-blue-400 hover:text-white" aria-label="Editar">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 3.487a2.25 2.25 0 113.182 3.182l-9.193 9.193a2 2 0 01-.878.513l-3.193.957.957-3.193a2 2 0 01.513-.878l9.193-9.193z" />
                             </svg>
                         </Button>
-                        <Button variant="ghost" size="icon" aria-label="Excluir">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <Button variant="ghost" size="icon" aria-label="Excluir" className="hover:bg-red-400 text-red-400 hover:text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 7h12M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
                             </svg>
                         </Button>

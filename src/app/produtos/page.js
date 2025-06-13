@@ -138,8 +138,36 @@ export default function ProdutosPage() {
                                         <Input type="text" className="w-full" placeholder="Nome do produto" />
                                     </div>
                                     <div className="mb-4">
-                                        <label className="block mb-1 text-gray-200">Imagem (URL)</label>
-                                        <Input type="text" className="w-full" placeholder="URL da imagem" />
+                                        <label className="block mb-1 text-gray-200">Imagem</label>
+                                        <div className="relative">
+                                            <Input
+                                                type="file"
+                                                id="file-input"
+                                                className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
+                                                onChange={(e) => {
+                                                    const fileName = e.target.files[0]?.name || "";
+                                                    document.getElementById("remove-btn").style.display = fileName ? "block" : "none";
+                                                    setImagemEvento(e.target.files[0]);
+                                                }}
+                                            />
+
+                                            <button
+                                                id="remove-btn"
+                                                onClick={() => {
+                                                    event.preventDefault();
+                                                    const fileInput = document.getElementById("file-input");
+                                                    fileInput.value = "";
+                                                    document.getElementById("remove-btn").style.display = "none";
+                                                }}
+                                                className=" mt-[10px] hidden absolute top-1 right-1 bg-red-500/0 text-red-500 rounded-md p-1 hover:bg-red-600 hover:text-white transition-colors mr-2"
+                                                aria-label="Remover arquivo"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="mb-4">
                                         <label className="block mb-1 text-gray-200">Descrição</label>
@@ -180,7 +208,7 @@ export default function ProdutosPage() {
                                         ))}
                                         <button
                                             type="button"
-                                            className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm")}
+                                            className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm hover:cursor-pointer")}
                                             disabled={usoFields.length >= 8}
                                             onClick={() => {
                                                 if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
