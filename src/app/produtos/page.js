@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Input } from "../../components/ui/input"
 import Produto from "../../components/personalizados/produto"
 import { useState } from 'react';
+import Modal from "../../components/personalizados/modal"
 // Make sure Produto is exported as a named export from the referenced file.
 
 
@@ -58,7 +59,14 @@ export default function ProdutosPage() {
     ];
 
     const [createModal, setCreateModal] = useState(false)
+    const [deleteModal, setDeleteModal] = useState(false)
+    const [editModal, setEditModal] = useState(false)
+
     const [usoFields, setUsoFields] = useState([""])
+
+    const handleDeleteProduto = () => {
+        return
+    }
 
     return (
         <div className="min-h-screen bg-stone-900 text-gray-100">
@@ -118,6 +126,12 @@ export default function ProdutosPage() {
 
                 {produtos.map((produto, idx) => (
                     <Produto
+                        onClickRemove={() => {
+                            setDeleteModal(true)
+                        }}
+                        onClickEdit={() => {
+                            setEditModal(true)
+                        }}
                         key={idx}
                         titulo={produto.titulo}
                         imagemURL={produto.imagemURL}
@@ -128,120 +142,242 @@ export default function ProdutosPage() {
             </div>
             {
                 createModal ?
-                    <>
-                        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-                            <div className="bg-stone-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-                                <h2 className="text-2xl font-bold mb-4 text-orange-400">Adicionar Produto</h2>
-                                <form>
-                                    <div className="mb-4">
-                                        <label className="block mb-1 text-gray-200">Título</label>
-                                        <Input type="text" className="w-full" placeholder="Nome do produto" />
-                                    </div>
-                                    <div className="mb-4">
-                                        <label className="block mb-1 text-gray-200">Imagem</label>
-                                        <div className="relative">
-                                            <Input
-                                                type="file"
-                                                id="file-input"
-                                                className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
-                                                onChange={(e) => {
-                                                    const fileName = e.target.files[0]?.name || "";
-                                                    document.getElementById("remove-btn").style.display = fileName ? "block" : "none";
-                                                    setImagemEvento(e.target.files[0]);
-                                                }}
-                                            />
-
-                                            <button
-                                                id="remove-btn"
-                                                onClick={() => {
-                                                    event.preventDefault();
-                                                    const fileInput = document.getElementById("file-input");
-                                                    fileInput.value = "";
-                                                    document.getElementById("remove-btn").style.display = "none";
-                                                }}
-                                                className=" mt-[10px] hidden absolute top-1 right-1 bg-red-500/0 text-red-500 rounded-md p-1 hover:bg-red-600 hover:text-white transition-colors mr-2"
-                                                aria-label="Remover arquivo"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="mb-4">
-                                        <label className="block mb-1 text-gray-200">Descrição</label>
-                                        <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Descrição do produto"></textarea>
-                                    </div>
-                                    <div className="mb-4">
-                                        <label className="block mb-1 text-gray-200 ">Modo de Uso</label>
-                                        {[...Array(usoFields?.length || 0)].map((_, i) => (
-                                            <div
-                                                className="flex flex-row justify-between"
-                                                key={i}>
-                                                <Input
-                                                    type="text"
-                                                    className="w-[88%] mb-2"
-                                                    placeholder={`Modo de uso #${i + 1}`}
-                                                    value={usoFields[i]}
-                                                    onChange={e => {
-                                                        const updated = [...usoFields];
-                                                        updated[i] = e.target.value;
-                                                        setUsoFields(updated);
-                                                    }}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className="flex items-center justify-center text-red-400 hover:text-white hover:bg-red-400 transition-all rounded h-9 w-9"
-                                                    onClick={() => {
-                                                        const updated = usoFields.filter((_, idx) => idx !== i);
-                                                        setUsoFields(updated);
-                                                    }}
-                                                    title="Remover modo de uso"
-                                                >
-                                                    {/* Ícone de lixeira SVG */}
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <button
-                                            type="button"
-                                            className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm hover:cursor-pointer")}
-                                            disabled={usoFields.length >= 8}
-                                            onClick={() => {
-                                                if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
-                                            }}
-                                        >
-                                            + Adicionar modo de uso
-                                        </button>
-                                    </div>
-                                    <div className="flex justify-end gap-2">
-                                        <button
-                                            type="button"
-                                            className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
-                                            onClick={() => {
-                                                setCreateModal(false)
-                                                setUsoFields([""])
-                                            }}
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
-                                        >
-                                            Salvar
-                                        </button>
-                                    </div>
-                                </form>
+                    <Modal titulo="Adicionar Produto">
+                        <form>
+                            <div className="mb-4">
+                                <label className="block mb-1 text-gray-200">Título</label>
+                                <Input type="text" className="w-full" placeholder="Nome do produto" />
                             </div>
-                        </div>
-                    </>
+                            <div className="mb-4">
+                                <label className="block mb-1 text-gray-200">Imagem</label>
+                                <div className="relative">
+                                    <Input
+                                        type="file"
+                                        id="file-input"
+                                        className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
+                                        onChange={(e) => {
+                                            const fileName = e.target.files[0]?.name || "";
+                                            document.getElementById("remove-btn").style.display = fileName ? "block" : "none";
+                                            setImagemEvento(e.target.files[0]);
+                                        }}
+                                    />
+
+                                    <button
+                                        id="remove-btn"
+                                        onClick={() => {
+                                            event.preventDefault();
+                                            const fileInput = document.getElementById("file-input");
+                                            fileInput.value = "";
+                                            document.getElementById("remove-btn").style.display = "none";
+                                        }}
+                                        className=" mt-[10px] hidden absolute top-1 right-1 bg-red-500/0 text-red-500 rounded-md p-1 hover:bg-red-600 hover:text-white transition-colors mr-2"
+                                        aria-label="Remover arquivo"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="mb-4">
+                                <label className="block mb-1 text-gray-200">Descrição</label>
+                                <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Descrição do produto"></textarea>
+                            </div>
+                            <div className="mb-4">
+                                <label className="block mb-1 text-gray-200 ">Modo de Uso</label>
+                                {[...Array(usoFields?.length || 0)].map((_, i) => (
+                                    <div
+                                        className="flex flex-row justify-between"
+                                        key={i}>
+                                        <Input
+                                            type="text"
+                                            className="w-[88%] mb-2"
+                                            placeholder={`Modo de uso #${i + 1}`}
+                                            value={usoFields[i]}
+                                            onChange={e => {
+                                                const updated = [...usoFields];
+                                                updated[i] = e.target.value;
+                                                setUsoFields(updated);
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="flex items-center justify-center text-red-400 hover:text-white hover:bg-red-400 transition-all rounded h-9 w-9"
+                                            onClick={() => {
+                                                const updated = usoFields.filter((_, idx) => idx !== i);
+                                                setUsoFields(updated);
+                                            }}
+                                            title="Remover modo de uso"
+                                        >
+                                            {/* Ícone de lixeira SVG */}
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm hover:cursor-pointer")}
+                                    disabled={usoFields.length >= 8}
+                                    onClick={() => {
+                                        if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
+                                    }}
+                                >
+                                    + Adicionar modo de uso
+                                </button>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    type="button"
+                                    className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+                                    onClick={() => {
+                                        setCreateModal(false)
+                                        setUsoFields([""])
+                                    }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
+                                >
+                                    Salvar
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
                     : ""
             }
-        </div>
+            {
+                deleteModal &&
+                <Modal titulo="Excluir Produto">
+                    <div className="mb-6">
+                        <p className="text-lg text-gray-200">Tem certeza que deseja excluir este produto?</p>
+                        <p className="text-sm text-gray-400 mt-2">Esta ação não poderá ser desfeita.</p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+                            onClick={() => setDeleteModal(false)}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600"
+                            onClick={handleDeleteProduto}
+                        >
+                            Excluir
+                        </button>
+                    </div>
+                </Modal>
+            }
+            {
+                editModal &&
+                <Modal titulo="Editar Produto">
+                    <form>
+                        <div className="mb-4">
+                            <label className="block mb-1 text-gray-200">Título</label>
+                            <Input type="text" className="w-full" placeholder="Nome do produto" />
+                        </div>
+                        <div className="mb-4">
+                            <label className="block mb-1 text-gray-200">Imagem</label>
+                            <div className="relative">
+                                <Input
+                                    type="file"
+                                    id="edit-file-input"
+                                    className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
+                                />
+                                <button
+                                    id="edit-remove-btn"
+                                    onClick={e => {
+                                        e.preventDefault();
+                                        const fileInput = document.getElementById("edit-file-input");
+                                        fileInput.value = "";
+                                        document.getElementById("edit-remove-btn").style.display = "none";
+                                    }}
+                                    className=" mt-[10px] hidden absolute top-1 right-1 bg-red-500/0 text-red-500 rounded-md p-1 hover:bg-red-600 hover:text-white transition-colors mr-2"
+                                    aria-label="Remover arquivo"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block mb-1 text-gray-200">Descrição</label>
+                            <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Descrição do produto"></textarea>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block mb-1 text-gray-200 ">Modo de Uso</label>
+                            {[...Array(usoFields?.length || 0)].map((_, i) => (
+                                <div
+                                    className="flex flex-row justify-between"
+                                    key={i}>
+                                    <Input
+                                        type="text"
+                                        className="w-[88%] mb-2"
+                                        placeholder={`Modo de uso #${i + 1}`}
+                                        value={usoFields[i]}
+                                        onChange={e => {
+                                            const updated = [...usoFields];
+                                            updated[i] = e.target.value;
+                                            setUsoFields(updated);
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="flex items-center justify-center text-red-400 hover:text-white hover:bg-red-400 transition-all rounded h-9 w-9"
+                                        onClick={() => {
+                                            const updated = usoFields.filter((_, idx) => idx !== i);
+                                            setUsoFields(updated);
+                                        }}
+                                        title="Remover modo de uso"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm hover:cursor-pointer")}
+                                disabled={usoFields.length >= 8}
+                                onClick={() => {
+                                    if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
+                                }}
+                            >
+                                + Adicionar modo de uso
+                            </button>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                type="button"
+                                className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+                                onClick={() => {
+                                    setEditModal(false)
+                                    setUsoFields([""])
+                                }}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
+                            >
+                                Salvar
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+            }
+        </div >
 
     );
 }
