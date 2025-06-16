@@ -4,7 +4,7 @@ export function middleware(request) {
     const { pathname } = new URL(request.url);
 
     // Ignorar rotas públicas
-    if (pathname === "/login" || pathname.startsWith("/_next") ) { 
+    if (pathname === "/login" || pathname.startsWith("/_next") || pathname.startsWith("/api")) { 
     //  Caso precise testar, só adicioar isso nessa condição 
     //  || pathname === "/admin" || pathname === "/registrar" || pathname === "/produtos"
         return NextResponse.next();

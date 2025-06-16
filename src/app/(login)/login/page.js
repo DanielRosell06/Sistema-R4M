@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
@@ -30,8 +31,14 @@ export default function LoginPage() {
         }
 
 
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        //localStorage.setItem("token", data.token);          Usando cookies ao inves do localstorage
+        //localStorage.setItem("user", JSON.stringify(data.user));
+
+        Cookies.set("token", data.token, { expires: 1, path: "/" });
+        Cookies.set("user", JSON.stringify(data.user), { expires: 1, path: "/" });
+
+        console.log("cookie")
+
         // redireciona conforme nivel de acesso
     if (data.user.tipo === "admin") {
       router.push("/admin");

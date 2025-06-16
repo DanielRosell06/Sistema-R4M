@@ -2,13 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function AdminPage() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [modalData, setModalData] = useState({ tipo: "", status: "" });
+
+  // checa auth e role no client
+  useEffect(() => {
+    const token = Cookies.get("token");
+    // fetch lista
+    fetch("/api/auth/usuarios", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setUsers(data);
+        setLoading(false);
+      });
+  }, [router]);
 
   async function handleDelete(id) {
     if (!confirm("Confirma exclusão deste usuário?")) return;
