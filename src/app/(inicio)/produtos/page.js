@@ -1,11 +1,10 @@
 'use client'
 
 import React from 'react';
-import Link from 'next/link';
-import { Input } from "../../components/ui/input"
-import Produto from "../../components/personalizados/produto"
+import { Input } from "../../../components/ui/input"
+import Produto from "../../../components/personalizados/produto"
 import { useState } from 'react';
-import Modal from "../../components/personalizados/modal"
+import Modal from "../../../components/personalizados/modal"
 // Make sure Produto is exported as a named export from the referenced file.
 
 
@@ -70,31 +69,6 @@ export default function ProdutosPage() {
 
     return (
         <div className="min-h-screen bg-stone-900 text-gray-100">
-            <nav className="flex justify-between p-4 bg-stone-800 mb-8">
-                <div>
-                    <h1 className='text-xl font-bold'>R4M<span className='ml-1 text-orange-400'>Polidores</span></h1>
-                </div>
-                <div>
-                    <Link
-                        href="/"
-                        className="mr-6 transition-colors hover:text-orange-400"
-                    >
-                        Produtos
-                    </Link>
-                    <a
-                        href="/produtos"
-                        className="mr-6 transition-colors hover:text-orange-400"
-                    >
-                        Organização
-                    </a>
-                    <a
-                        href="/contato"
-                        className="transition-colors hover:text-orange-400"
-                    >
-                        Usuários
-                    </a>
-                </div>
-            </nav>
             <div className='p-8 w-full'>
                 <h1 className='text-3xl ml-24'>Produtos</h1>
                 <p className="ml-24 mt-2 max-w-2xl text-gray-300">

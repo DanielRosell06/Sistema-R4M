@@ -6,32 +6,9 @@ import { useRouter } from "next/navigation";
 export default function AdminPage() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [modalData, setModalData] = useState({ tipo: "", status: "" });
-
-  // checa auth e role no client
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const usr = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-    if (usr.tipo !== "admin") {
-      router.push("/");
-      return;
-    }
-    // fetch lista
-    fetch("/api/auth/usuarios", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setUsers(data);
-        setLoading(false);
-      });
-  }, [router]);
 
   async function handleDelete(id) {
     if (!confirm("Confirma exclusão deste usuário?")) return;

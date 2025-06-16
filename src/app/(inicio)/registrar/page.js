@@ -16,23 +16,6 @@ export default function CreateUserForm() {
   const [mensagem, setMensagem] = useState(null);
   const [carregando, setCarregando] = useState(false);
 
-  // Protege a página: só admin logado pode usar
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user") || "null");
-
-    if (!token || !user) {
-      // não está logado
-      router.push("/login");
-      return;
-    }
-    if (user.tipo !== "admin") {
-      // não é admin
-      router.push("/");
-      return;
-    }
-  }, [router]);
-
   async function handleSubmit(e) {
     e.preventDefault();
     setCarregando(true);
