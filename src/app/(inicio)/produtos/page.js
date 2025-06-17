@@ -1,61 +1,50 @@
 'use client'
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from "../../../components/ui/input"
 import Produto from "../../../components/personalizados/produto"
 import { useState } from 'react';
 import Modal from "../../../components/personalizados/modal"
+import { data } from 'autoprefixer';
 // Make sure Produto is exported as a named export from the referenced file.
 
 
 export default function ProdutosPage() {
-    const produtos = [
-        {
-            titulo: "Polidor Corte Rápido",
-            imagemURL: "/images/logo.png",
-            descricao: [
-                "Remove riscos profundos e marcas de lixa.",
-                "Ideal para o primeiro passo do polimento."
-            ],
-            modoUso: "Aplique uma pequena quantidade na boina de lã e trabalhe em pequenas áreas até o brilho aparecer."
-        },
-        {
-            titulo: "Polidor Refino",
-            imagemURL: "/images/logo.png",
-            descricao: [
-                "Remove micro riscos e marcas do polidor de corte.",
-                "Proporciona acabamento uniforme."
-            ],
-            modoUso: "Utilize com boina de espuma macia, espalhe o produto e trabalhe até o acabamento desejado."
-        },
-        {
-            titulo: "Polidor Lustro",
-            imagemURL: "/images/logo.png",
-            descricao: [
-                "Realça o brilho e elimina hologramas.",
-                "Indicado para o toque final."
-            ],
-            modoUso: "Aplique com boina super macia, em movimentos circulares, até obter brilho intenso."
-        },
-        {
-            titulo: "Polidor 3 em 1",
-            imagemURL: "/images/logo.png",
-            descricao: [
-                "Corta, refina e lustra em um único produto.",
-                "Prático para polimentos rápidos."
-            ],
-            modoUso: "Aplique na superfície limpa, use boina apropriada e trabalhe conforme necessidade."
-        },
-        {
-            titulo: "Polidor Antirresíduo",
-            imagemURL: "/images/logo.png",
-            descricao: [
-                "Remove resíduos de polidores anteriores.",
-                "Prepara a superfície para proteção."
-            ],
-            modoUso: "Pulverize sobre a superfície e remova com pano de microfibra limpo."
+
+    const [produtos, setProdutos] = useState([])
+    const [reloadVar, setReloadVar] = useState(-1)
+
+    const reloadProdutos = () => setReloadVar(prev => prev * -1);
+
+    useEffect(() => {
+        async function loadProdutos() {
+            try {
+                const res = await fetch("/api/inicio/produto", {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" }
+                });
+
+                if (!res.ok) throw new Error("Erro na resposta da API");
+
+                const data = await res.json(); // Extrai os dados da resposta
+
+                const produtosProcessados = data.map(produto => ({
+                    ...produto,
+                    descricao: produto.descricao
+                        ? JSON.parse(produto.descricao)   // Converte a string para array
+                        : []                             // Fallback para array vazio
+                }));
+
+                setProdutos(produtosProcessados);
+                console.log(produtosProcessados);
+
+            } catch (err) {
+                console.error("Erro ao carregar produtos:", err);
+            }
         }
-    ];
+
+        loadProdutos();
+    }, [reloadVar])
 
     const [createModal, setCreateModal] = useState(false)
     const [deleteModal, setDeleteModal] = useState(false)
@@ -65,6 +54,40 @@ export default function ProdutosPage() {
 
     const handleDeleteProduto = () => {
         return
+    }
+
+    const [imagemEvento, setImagemEvento] = useState("");
+    const [titulo, setTitulo] = useState("");
+    const [modoUso, setModoUso] = useState("");
+
+    async function handleCreateProduto() {
+        try {
+            const res = await fetch("/api/inicio/produto", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    titulo: titulo,
+                    descricao: usoFields,
+                    modo_de_uso: modoUso
+                })
+            });
+            if (res.ok) {
+                setCreateModal(false);
+                setTitulo("");
+                setModoUso("");
+                setUsoFields([""]);
+                setImagemEvento("");
+                reloadProdutos()
+                // Atualize a lista de produtos aqui se necessário
+            } else {
+                // Trate erros de API
+                alert("Erro ao criar produto");
+            }
+        } catch (err) {
+            alert("Erro ao criar produto");
+        }
     }
 
     return (
@@ -108,19 +131,25 @@ export default function ProdutosPage() {
                         }}
                         key={idx}
                         titulo={produto.titulo}
-                        imagemURL={produto.imagemURL}
+                        imagem={produto.imagem}
                         descricao={produto.descricao}
-                        modoUso={produto.modoUso}
+                        modoUso={produto.modo_de_uso}
                     />
                 ))}
             </div>
             {
                 createModal ?
                     <Modal titulo="Adicionar Produto">
-                        <form>
+                        <form onSubmit={e => e.preventDefault()}>
                             <div className="mb-4">
                                 <label className="block mb-1 text-gray-200">Título</label>
-                                <Input type="text" className="w-full" placeholder="Nome do produto" />
+                                <Input
+                                    type="text"
+                                    className="w-full"
+                                    placeholder="Nome do produto"
+                                    value={titulo}
+                                    onChange={e => setTitulo(e.target.value)}
+                                />
                             </div>
                             <div className="mb-4">
                                 <label className="block mb-1 text-gray-200">Imagem</label>
@@ -155,11 +184,17 @@ export default function ProdutosPage() {
                                 </div>
                             </div>
                             <div className="mb-4">
-                                <label className="block mb-1 text-gray-200">Descrição</label>
-                                <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Descrição do produto"></textarea>
+                                <label className="block mb-1 text-gray-200">Modo de Uso</label>
+                                <textarea
+                                    className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2"
+                                    rows={3}
+                                    placeholder="Modo de uso do produto"
+                                    value={modoUso}
+                                    onChange={e => setModoUso(e.target.value)}
+                                ></textarea>
                             </div>
                             <div className="mb-4">
-                                <label className="block mb-1 text-gray-200 ">Modo de Uso</label>
+                                <label className="block mb-1 text-gray-200 ">Especificações Técnicas</label>
                                 {[...Array(usoFields?.length || 0)].map((_, i) => (
                                     <div
                                         className="flex flex-row justify-between"
@@ -167,7 +202,7 @@ export default function ProdutosPage() {
                                         <Input
                                             type="text"
                                             className="w-[88%] mb-2"
-                                            placeholder={`Modo de uso #${i + 1}`}
+                                            placeholder={`Especificação #${i + 1}`}
                                             value={usoFields[i]}
                                             onChange={e => {
                                                 const updated = [...usoFields];
@@ -182,7 +217,7 @@ export default function ProdutosPage() {
                                                 const updated = usoFields.filter((_, idx) => idx !== i);
                                                 setUsoFields(updated);
                                             }}
-                                            title="Remover modo de uso"
+                                            title="Remover especificação"
                                         >
                                             {/* Ícone de lixeira SVG */}
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -199,7 +234,7 @@ export default function ProdutosPage() {
                                         if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
                                     }}
                                 >
-                                    + Adicionar modo de uso
+                                    + Adicionar epsecificação
                                 </button>
                             </div>
                             <div className="flex justify-end gap-2">
@@ -214,8 +249,11 @@ export default function ProdutosPage() {
                                     Cancelar
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="button"
                                     className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
+                                    onClick={() => { 
+                                        handleCreateProduto() 
+                                    }}
                                 >
                                     Salvar
                                 </button>
@@ -284,11 +322,11 @@ export default function ProdutosPage() {
                             </div>
                         </div>
                         <div className="mb-4">
-                            <label className="block mb-1 text-gray-200">Descrição</label>
-                            <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Descrição do produto"></textarea>
+                            <label className="block mb-1 text-gray-200">Modo de Uso</label>
+                            <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Modo de uso do produto"></textarea>
                         </div>
                         <div className="mb-4">
-                            <label className="block mb-1 text-gray-200 ">Modo de Uso</label>
+                            <label className="block mb-1 text-gray-200 ">Especificações</label>
                             {[...Array(usoFields?.length || 0)].map((_, i) => (
                                 <div
                                     className="flex flex-row justify-between"
@@ -296,7 +334,7 @@ export default function ProdutosPage() {
                                     <Input
                                         type="text"
                                         className="w-[88%] mb-2"
-                                        placeholder={`Modo de uso #${i + 1}`}
+                                        placeholder={`Especificação #${i + 1}`}
                                         value={usoFields[i]}
                                         onChange={e => {
                                             const updated = [...usoFields];
@@ -311,7 +349,7 @@ export default function ProdutosPage() {
                                             const updated = usoFields.filter((_, idx) => idx !== i);
                                             setUsoFields(updated);
                                         }}
-                                        title="Remover modo de uso"
+                                        title="Remover especificação"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -327,7 +365,7 @@ export default function ProdutosPage() {
                                     if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
                                 }}
                             >
-                                + Adicionar modo de uso
+                                + Adicionar especificação
                             </button>
                         </div>
                         <div className="flex justify-end gap-2">

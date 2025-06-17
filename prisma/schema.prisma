@@ -13,7 +13,6 @@ model Categoria {
   titulo       String
   ranking      Int
   ranking_site Int       @default(0)
-  Produto      Produto[]
 }
 
 model Produto {
@@ -26,7 +25,6 @@ model Produto {
   ranking_categoria Int
   status            String    @default("ativo")
   imagem            String
-  Categoria         Categoria @relation(fields: [id_Categoria], references: [id])
 }
 
 model Usuario {
