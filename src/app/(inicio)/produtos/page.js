@@ -6,15 +6,24 @@ import Produto from "../../../components/personalizados/produto"
 import { useState } from 'react';
 import Modal from "../../../components/personalizados/modal"
 import { data } from 'autoprefixer';
-// Make sure Produto is exported as a named export from the referenced file.
-
+import { Skeleton } from "../../..//components/ui/skeleton"
 
 export default function ProdutosPage() {
 
+    // MODALS
+    const [editModal, setEditModal] = useState(false)
+    const [createModal, setCreateModal] = useState(false)
+    const [deleteModal, setDeleteModal] = useState(false)
+
+    //LOADING PRODITUOS
     const [produtos, setProdutos] = useState([])
     const [reloadVar, setReloadVar] = useState(-1)
+    const [loading, setLoading] = useState(true)
 
-    const reloadProdutos = () => setReloadVar(prev => prev * -1);
+    const reloadProdutos = () => {
+        setLoading(true)
+        setReloadVar(prev => prev * -1)
+    };
 
     useEffect(() => {
         async function loadProdutos() {
@@ -36,6 +45,7 @@ export default function ProdutosPage() {
                 }));
 
                 setProdutos(produtosProcessados);
+                setLoading(false)
                 console.log(produtosProcessados);
 
             } catch (err) {
@@ -46,17 +56,36 @@ export default function ProdutosPage() {
         loadProdutos();
     }, [reloadVar])
 
-    const [createModal, setCreateModal] = useState(false)
-    const [deleteModal, setDeleteModal] = useState(false)
-    const [editModal, setEditModal] = useState(false)
 
-    const [usoFields, setUsoFields] = useState([""])
+    // EXCLUINDO PRODUTOS
+    const [IdExcluir, setIdExcluir] = useState(-1)
 
-    const handleDeleteProduto = () => {
-        return
+    async function handleDeleteProduto() {
+        try {
+            const res = await fetch(`/api/inicio/produto?idProduto=${IdExcluir}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            });
+            if (res.ok) {
+                setIdExcluir(-1)
+                reloadProdutos()
+                setDeleteModal(false)
+                // Atualize a lista de produtos aqui se necessário
+            } else {
+                // Trate erros de API
+                alert("Erro ao excluir produto");
+            }
+        } catch (err) {
+            alert("Erro ao excluir produto");
+        }
     }
 
+
+    // CRIANDO PRODUTOS
     const [imagemEvento, setImagemEvento] = useState("");
+    const [usoFields, setUsoFields] = useState([""])
     const [titulo, setTitulo] = useState("");
     const [modoUso, setModoUso] = useState("");
 
@@ -121,21 +150,31 @@ export default function ProdutosPage() {
                     </div>
                 </div>
 
-                {produtos.map((produto, idx) => (
-                    <Produto
-                        onClickRemove={() => {
-                            setDeleteModal(true)
-                        }}
-                        onClickEdit={() => {
-                            setEditModal(true)
-                        }}
-                        key={idx}
-                        titulo={produto.titulo}
-                        imagem={produto.imagem}
-                        descricao={produto.descricao}
-                        modoUso={produto.modo_de_uso}
-                    />
-                ))}
+                {loading ?
+                    <div className="mt-4 flex flex-col space-y-4">
+                        <Skeleton className=" h-12 w-full rounded-br-lg bg-[#433636]" />
+                        <Skeleton className=" h-12 w-full rounded-br-lg bg-[#433636]" />
+                        <Skeleton className=" h-12 w-full rounded-br-lg bg-[#433636]" />
+                        <Skeleton className=" h-12 w-full rounded-br-lg bg-[#433636]" />
+                    </div>
+                    :
+                    produtos.map((produto, idx) => (
+                        <Produto
+                            onClickRemove={() => {
+                                console.log(produto.id)
+                                setIdExcluir(produto.id)
+                                setDeleteModal(true)
+                            }}
+                            onClickEdit={() => {
+                                setEditModal(true)
+                            }}
+                            key={idx}
+                            titulo={produto.titulo}
+                            imagem={produto.imagem}
+                            descricao={produto.descricao}
+                            modoUso={produto.modo_de_uso}
+                        />
+                    ))}
             </div>
             {
                 createModal ?
@@ -251,8 +290,8 @@ export default function ProdutosPage() {
                                 <button
                                     type="button"
                                     className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
-                                    onClick={() => { 
-                                        handleCreateProduto() 
+                                    onClick={() => {
+                                        handleCreateProduto()
                                     }}
                                 >
                                     Salvar
