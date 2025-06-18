@@ -1,5 +1,12 @@
 
 import { prisma } from '../../../../lib/prisma';
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function GET(request) {
     try {
@@ -28,34 +35,72 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const data = await request.json();
-        console.log(data)
+        const formData = await request.formData();
+        
+        const titulo = formData.get('titulo');
+        const descricao = formData.getAll('descricao');
+        const modo_de_uso = formData.get('modo_de_uso');
+        const imagem = formData.get('imagem');
 
-        /*
-        model Produto {
-            id                Int       @id @default(autoincrement())
-            titulo            String
-            descricao         Json
-            modo_de_uso       String
-            id_Categoria      Int
-            ranking_top       Int
-            ranking_categoria Int
-            status            String    @default("ativo")
-            imagem            String
-            Categoria         Categoria @relation(fields: [id_Categoria], references: [id])
+        console.log({
+            titulo,
+            descricao,
+            modo_de_uso,
+            imagem: imagem ? { 
+                name: imagem.name, 
+                size: imagem.size,
+                type: imagem.type
+            } : null
+        });
+
+        let imagemUrl = "";
+
+        // Processa imagem se for um arquivo válido
+        if (imagem && imagem instanceof File && imagem.size > 0) {
+
+            const arrayBuffer = await imagem.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+
+            const uploadResponse = await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    { 
+                        folder: "produtos-R4M",
+                        resource_type: "auto"
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error("Erro no Cloudinary:", error);
+                            reject(new Error("Falha no upload da imagem"));
+                        } else {
+                            resolve(result);
+                        }
+                    }
+                );
+                uploadStream.end(buffer);
+            });
+
+            imagemUrl = uploadResponse.secure_url;
         }
-        */
 
+        // Validação de campos obrigatórios
+        if (!titulo || !modo_de_uso || descricao.length === 0) {
+            return new Response(
+                JSON.stringify({ message: "Campos obrigatórios faltando" }),
+                { status: 400 }
+            );
+        }
+
+        // Cria produto no banco de dados
         const novoProduto = await prisma.produto.create({
             data: {
-                titulo: data.titulo,
-                descricao: JSON.stringify(data.descricao),
-                modo_de_uso: data.modo_de_uso,
-                id_Categoria: -1,
+                titulo: titulo,
+                descricao: JSON.stringify(descricao),
+                modo_de_uso: modo_de_uso,
+                id_Categoria: -1, // Ajustar conforme sua lógica
                 ranking_top: -1,
                 ranking_categoria: -1,
-                imagem: '',
-                // Adicione outros campos conforme necessário
+                imagem: imagemUrl,
+                status: "ativo"
             }
         });
 
@@ -69,7 +114,10 @@ export async function POST(request) {
     } catch (error) {
         console.error("Erro ao criar produto:", error);
         return new Response(
-            JSON.stringify({ message: "Erro interno do servidor." }),
+            JSON.stringify({ 
+                message: "Erro interno do servidor",
+                error: error.message
+            }),
             {
                 status: 500,
                 headers: { "Content-Type": "application/json" }
@@ -93,8 +141,7 @@ export async function DELETE(request) {
             );
         }
 
-        let response = await prisma.produto.update({
-            data: { status: "inativo" },
+        let response = await prisma.produto.delete({
             where: { id: id }
         })
 

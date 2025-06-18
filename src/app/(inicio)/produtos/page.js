@@ -88,34 +88,50 @@ export default function ProdutosPage() {
     const [usoFields, setUsoFields] = useState([""])
     const [titulo, setTitulo] = useState("");
     const [modoUso, setModoUso] = useState("");
+    const [imagemProduto, setImagemProduto] = useState("");
 
     async function handleCreateProduto() {
         try {
+            // Cria um novo objeto FormData
+            const formData = new FormData();
+
+            // Adiciona os campos ao FormData
+            formData.append('titulo', titulo);
+
+            // Para campos array (descricao), adiciona cada item separadamente
+            usoFields.forEach((field, index) => {
+                formData.append('descricao', field);
+            });
+
+            formData.append('modo_de_uso', modoUso);
+
+            // Adiciona a imagem como arquivo (se existir)
+            if (imagemProduto) {
+                formData.append('imagem', imagemProduto);
+            }
+
+            // Envia o FormData
             const res = await fetch("/api/inicio/produto", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    titulo: titulo,
-                    descricao: usoFields,
-                    modo_de_uso: modoUso
-                })
+                body: formData
             });
+
             if (res.ok) {
                 setCreateModal(false);
                 setTitulo("");
                 setModoUso("");
                 setUsoFields([""]);
-                setImagemEvento("");
+
+                setImagemProduto("");
+
                 reloadProdutos()
-                // Atualize a lista de produtos aqui se necessário
             } else {
-                // Trate erros de API
-                alert("Erro ao criar produto");
+                // Trate erros de API com mais detalhes
+                const errorData = await res.json();
+                alert(`Erro ao criar produto: ${errorData.message || res.statusText}`);
             }
         } catch (err) {
-            alert("Erro ao criar produto");
+            alert(`Erro ao criar produto: ${err.message}`);
         }
     }
 
@@ -170,7 +186,7 @@ export default function ProdutosPage() {
                             }}
                             key={idx}
                             titulo={produto.titulo}
-                            imagem={produto.imagem}
+                            imagemURL={produto.imagem}
                             descricao={produto.descricao}
                             modoUso={produto.modo_de_uso}
                         />
@@ -196,11 +212,12 @@ export default function ProdutosPage() {
                                     <Input
                                         type="file"
                                         id="file-input"
+                                        accept="image/*"
                                         className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
                                         onChange={(e) => {
                                             const fileName = e.target.files[0]?.name || "";
                                             document.getElementById("remove-btn").style.display = fileName ? "block" : "none";
-                                            setImagemEvento(e.target.files[0]);
+                                            setImagemProduto(e.target.files[0]);
                                         }}
                                     />
 

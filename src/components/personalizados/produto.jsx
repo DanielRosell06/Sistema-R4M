@@ -61,21 +61,33 @@ export default function Produto({ titulo, imagemURL, descricao, modoUso, onClick
                 </div>
             </div>
             {aberto && (
-                <div className='flex h-[200px] bg-[#24201b] text-gray-100 rounded-b-lg pl-8 transition-colors w-full'>
-                    <div className="flex justify-center mt-4 ml-auto mr-auto">
-                        <img
-                            src={imagemURL}
-                            alt="Logo"
-                            className='mr-10'
-                            style={{ maxWidth: '300px', maxHeight: '200px', objectFit: 'contain' }}
-                        />
-                        <ul className="w-[400px] list-disc pl-5 text-sm">
-                            {descricao.map((item, idx) => (
-                                <li key={idx}>{item}</li>
-                            ))}
-                        </ul>
-                        <div className="w-[200px] ml-12 text-xs text-gray-400">
-                            <strong>Modo de uso:</strong> {modoUso}
+                <div className='flex h-[230px] bg-[#24201b] text-gray-100 rounded-b-lg pl-8 transition-colors w-full'>
+                    <div className="flex justify-between mt-4 ml-auto mr-auto w-full">
+                        <div className='w-[30%]'>
+                            <h1 className='mb-2'>Imagem:</h1>
+                            {imagemURL == "" ? 
+                            <h1 className='text-sm text-stone-400'>Este produto ainda não possui imagem.</h1> 
+                            :
+
+                                <img
+                                    src={imagemURL}
+                                    alt="Logo"
+                                    className='mr-10'
+                                    style={{ maxWidth: '300px', maxHeight: '160px', objectFit: 'contain' }}
+                                />
+                            }
+                        </div>
+                        <div className='w-[30%]'>
+                            <h1 className='mb-2'>Especificações:</h1>
+                            <ul className=" list-disc pl-5 text-sm">
+                                {descricao.map((item, idx) => (
+                                    <li key={idx}>{item}</li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="w-[30%] text-sm">
+                            <h1 className='mb-2'>Modo de uso:</h1>
+                            {modoUso}
                         </div>
                     </div>
                 </div>
