@@ -84,7 +84,6 @@ export default function ProdutosPage() {
 
 
     // CRIANDO PRODUTOS
-    const [imagemEvento, setImagemEvento] = useState("");
     const [usoFields, setUsoFields] = useState([""])
     const [titulo, setTitulo] = useState("");
     const [modoUso, setModoUso] = useState("");
@@ -135,6 +134,11 @@ export default function ProdutosPage() {
         }
     }
 
+
+    // EDITANDO PRODUTOS
+
+
+
     return (
         <div className="min-h-screen bg-stone-900 text-gray-100">
             <div className='p-8 w-full'>
@@ -183,6 +187,10 @@ export default function ProdutosPage() {
                             }}
                             onClickEdit={() => {
                                 setEditModal(true)
+                                setUsoFields(produto.descricao)
+                                setTitulo(produto.titulo)
+                                setModoUso(produto.modo_de_uso)
+                                setImagemProduto(produto.imagem)
                             }}
                             key={idx}
                             titulo={produto.titulo}
@@ -210,10 +218,10 @@ export default function ProdutosPage() {
                                 <label className="block mb-1 text-gray-200">Imagem</label>
                                 <div className="relative">
                                     <Input
+                                        className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
                                         type="file"
                                         id="file-input"
                                         accept="image/*"
-                                        className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
                                         onChange={(e) => {
                                             const fileName = e.target.files[0]?.name || "";
                                             document.getElementById("remove-btn").style.display = fileName ? "block" : "none";
@@ -349,37 +357,70 @@ export default function ProdutosPage() {
                     <form>
                         <div className="mb-4">
                             <label className="block mb-1 text-gray-200">Título</label>
-                            <Input type="text" className="w-full" placeholder="Nome do produto" />
+                            <Input
+                                value={titulo}
+                                onChange={(e) => setTitulo(e.target.value)}
+                                type="text" className="w-full" placeholder="Nome do produto"
+                            />
                         </div>
                         <div className="mb-4">
                             <label className="block mb-1 text-gray-200">Imagem</label>
-                            <div className="relative">
-                                <Input
-                                    type="file"
-                                    id="edit-file-input"
-                                    className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
-                                />
-                                <button
-                                    id="edit-remove-btn"
-                                    onClick={e => {
-                                        e.preventDefault();
-                                        const fileInput = document.getElementById("edit-file-input");
-                                        fileInput.value = "";
-                                        document.getElementById("edit-remove-btn").style.display = "none";
-                                    }}
-                                    className=" mt-[10px] hidden absolute top-1 right-1 bg-red-500/0 text-red-500 rounded-md p-1 hover:bg-red-600 hover:text-white transition-colors mr-2"
-                                    aria-label="Remover arquivo"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                    </svg>
-                                </button>
+                            <div className='flex'>
+                                <div>
+                                    {imagemProduto != "" ?
+                                        typeof imagemProduto === "string" ?
+                                            <img className='h-32' src={imagemProduto}></img>
+                                            :
+                                            <div className=' border-2 p-2 rounded-sm h-full border-dashed border-gray-300'>
+                                                <p className="text-sm text-white">Nova Imagem: {imagemProduto.name}</p>
+                                            </div>
+                                        :
+                                        <h1 className='text-sm text-stone-500'>O produto ainda não possui imagem</h1>
+                                    }
+                                </div>
+                                <div className="relative">
+                                    <label
+                                        htmlFor="edit-file-input"
+                                        className=" ml-4 p-4 flex items-center justify-center h-[50px] w-44 bg-orange-400 hover:bg-orange-600 text-white text-sm font-medium cursor-pointer rounded-md transition-colors"
+                                    >
+                                        Clique aqui para alterar a imagem
+                                        <input
+                                            type="file"
+                                            id="edit-file-input"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const fileName = e.target.files[0]?.name || "";
+                                                setImagemProduto(e.target.files[0]);
+                                            }}
+                                        />
+                                    </label>
+                                    {imagemProduto != "" ?
+                                        <button
+                                            id="edit-remove-btn"
+                                            onClick={e => {
+                                                e.preventDefault();
+                                                const fileInput = document.getElementById("edit-file-input");
+                                                fileInput.value = "";
+                                                document.getElementById("edit-remove-btn").style.display = "none";
+                                                setImagemProduto("")
+                                            }}
+                                            className="mt-4 ml-4 p-2 bg-gray-600 rounded-sm hover:bg-red-500 transition-all "
+                                            aria-label="Remover arquivo"
+                                        >
+                                            Remover Imagem
+                                        </button>
+                                        : ""
+                                    }
+                                </div>
                             </div>
                         </div>
                         <div className="mb-4">
                             <label className="block mb-1 text-gray-200">Modo de Uso</label>
-                            <textarea className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Modo de uso do produto"></textarea>
+                            <textarea
+                                value={modoUso}
+                                onChange={(e) => setModoUso(e.target.value)}
+                                className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Modo de uso do produto"></textarea>
                         </div>
                         <div className="mb-4">
                             <label className="block mb-1 text-gray-200 ">Especificações</label>
