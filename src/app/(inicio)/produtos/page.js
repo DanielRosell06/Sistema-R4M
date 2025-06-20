@@ -134,9 +134,56 @@ export default function ProdutosPage() {
         }
     }
 
+    const [idEditar, setIdEditar] = useState(-1)
 
     // EDITANDO PRODUTOS
+    async function handleEditProduto() {
+        try {
+            // Cria um novo objeto FormData
+            const formData = new FormData();
 
+            // Adiciona os campos ao FormData
+            formData.append('id', idEditar);
+            formData.append('titulo', titulo);
+
+            // Para campos array (descricao), adiciona cada item separadamente
+            usoFields.forEach((field, index) => {
+                formData.append('descricao', field);
+            });
+
+            formData.append('modo_de_uso', modoUso);
+
+            // Adiciona a imagem como arquivo (se existir)
+            if (imagemProduto == null) {
+                setImagemProduto("")
+            }
+
+            formData.append('imagem', imagemProduto);
+
+            // Envia o FormData
+            const res = await fetch("/api/inicio/produto", {
+                method: "PUT",
+                body: formData
+            });
+
+            if (res.ok) {
+                setCreateModal(false);
+                setTitulo("");
+                setModoUso("");
+                setUsoFields([""]);
+
+                setImagemProduto("");
+
+                reloadProdutos()
+            } else {
+                // Trate erros de API com mais detalhes
+                const errorData = await res.json();
+                alert(`Erro ao criar produto: ${errorData.message || res.statusText}`);
+            }
+        } catch (err) {
+            alert(`Erro ao criar produto: ${err.message}`);
+        }
+    }
 
 
     return (
@@ -186,11 +233,12 @@ export default function ProdutosPage() {
                                 setDeleteModal(true)
                             }}
                             onClickEdit={() => {
-                                setEditModal(true)
+                                setIdEditar(produto.id)
                                 setUsoFields(produto.descricao)
                                 setTitulo(produto.titulo)
                                 setModoUso(produto.modo_de_uso)
                                 setImagemProduto(produto.imagem)
+                                setEditModal(true)
                             }}
                             key={idx}
                             titulo={produto.titulo}
@@ -477,7 +525,7 @@ export default function ProdutosPage() {
                                 Cancelar
                             </button>
                             <button
-                                type="submit"
+                                onClick={() => {handleEditProduto()}}
                                 className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
                             >
                                 Salvar

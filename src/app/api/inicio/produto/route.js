@@ -11,7 +11,7 @@ cloudinary.config({
 export async function GET(request) {
     try {
         const produtos = await prisma.produto.findMany({
-            where: {status : "ativo"}
+            where: { status: "ativo" }
         });
 
         return new Response(
@@ -36,7 +36,7 @@ export async function GET(request) {
 export async function POST(request) {
     try {
         const formData = await request.formData();
-        
+
         const titulo = formData.get('titulo');
         const descricao = formData.getAll('descricao');
         const modo_de_uso = formData.get('modo_de_uso');
@@ -46,8 +46,8 @@ export async function POST(request) {
             titulo,
             descricao,
             modo_de_uso,
-            imagem: imagem ? { 
-                name: imagem.name, 
+            imagem: imagem ? {
+                name: imagem.name,
                 size: imagem.size,
                 type: imagem.type
             } : null
@@ -63,7 +63,7 @@ export async function POST(request) {
 
             const uploadResponse = await new Promise((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream(
-                    { 
+                    {
                         folder: "produtos-R4M",
                         resource_type: "auto"
                     },
@@ -114,7 +114,7 @@ export async function POST(request) {
     } catch (error) {
         console.error("Erro ao criar produto:", error);
         return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
                 message: "Erro interno do servidor",
                 error: error.message
             }),
@@ -129,7 +129,7 @@ export async function POST(request) {
 export async function DELETE(request) {
     try {
         const { searchParams } = new URL(request.url);
-        const id = parseInt(searchParams.get('idProduto'), 10) ;
+        const id = parseInt(searchParams.get('idProduto'), 10);
 
         if (!id) {
             return new Response(
@@ -166,3 +166,99 @@ export async function DELETE(request) {
 
 // AGORA PRECISA IMPLEMENTAR O PUT, FICANDO ESPERTO SE A IMAGEM MUDOU OU NÃO.
 // SE A IMAGEM NÃO MUDAR, NÃO PRECISA FAZER OUTRA REQUISIÃO PARA O CLOUDNARY
+
+export async function PUT(request) {
+    try {
+        const formData = await request.formData();
+
+        const id = parseInt(formData.get('id'), 10);
+        const titulo = formData.get('titulo');
+        const descricao = formData.getAll('descricao');
+        const modo_de_uso = formData.get('modo_de_uso');
+        const imagem = formData.get('imagem');
+
+        let imagemUrl = "";
+
+        // Processa imagem se for um arquivo válido
+        if (typeof imagem != 'string') {
+            if (imagem && imagem instanceof File && imagem.size > 0) {
+
+                const arrayBuffer = await imagem.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+
+                const uploadResponse = await new Promise((resolve, reject) => {
+                    const uploadStream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: "produtos-R4M",
+                            resource_type: "auto"
+                        },
+                        (error, result) => {
+                            if (error) {
+                                console.error("Erro no Cloudinary:", error);
+                                reject(new Error("Falha no upload da imagem"));
+                            } else {
+                                resolve(result);
+                            }
+                        }
+                    );
+                    uploadStream.end(buffer);
+                });
+
+                imagemUrl = uploadResponse.secure_url;
+            }
+        } else{
+            imagemUrl = imagem
+        }
+
+        // Validação de campos obrigatórios
+        if (!titulo || !modo_de_uso || descricao.length === 0) {
+            return new Response(
+                JSON.stringify({ message: "Campos obrigatórios faltando" }),
+                { status: 400 }
+            );
+        }
+
+        // Cria produto no banco de dados
+        const novoProduto = await prisma.produto.update({
+            data: {
+                titulo: titulo,
+                descricao: JSON.stringify(descricao),
+                modo_de_uso: modo_de_uso,
+                id_Categoria: -1, // Ajustar conforme sua lógica
+                ranking_top: -1,
+                ranking_categoria: -1,
+                imagem: imagemUrl,
+                status: "ativo"
+            },
+            where: {
+                id : id
+            }
+        });
+
+        return new Response(
+            JSON.stringify(novoProduto),
+            {
+                status: 201,
+                headers: { "Content-Type": "application/json" }
+            }
+        );
+    } catch (error) {
+        console.error("Erro ao criar produto:", error);
+        return new Response(
+            JSON.stringify({
+                message: "Erro interno do servidor",
+                error: error.message
+            }),
+            {
+                status: 500,
+                headers: { "Content-Type": "application/json" }
+            }
+        );
+    }
+}
+
+export const config = {
+  api: {
+    bodyParser: false
+  }
+};
