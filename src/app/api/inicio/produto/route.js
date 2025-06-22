@@ -177,10 +177,15 @@ export async function PUT(request) {
         const modo_de_uso = formData.get('modo_de_uso');
         const imagem = formData.get('imagem');
 
-        let imagemUrl = "";
+        // Busca o produto atual para obter a imagem existente, caso não seja enviada uma nova
+        const produtoAtual = await prisma.produto.findUnique({
+            where: { id: id }
+        });
+
+        let imagemUrl = produtoAtual ? produtoAtual.imagem : "";
 
         // Processa imagem se for um arquivo válido
-        if (typeof imagem != 'string') {
+        if (typeof imagem !== 'string') {
             if (imagem && imagem instanceof File && imagem.size > 0) {
 
                 const arrayBuffer = await imagem.arrayBuffer();
@@ -206,8 +211,8 @@ export async function PUT(request) {
 
                 imagemUrl = uploadResponse.secure_url;
             }
-        } else{
-            imagemUrl = imagem
+        } else if (imagem) {
+            imagemUrl = imagem;
         }
 
         // Validação de campos obrigatórios
@@ -231,14 +236,14 @@ export async function PUT(request) {
                 status: "ativo"
             },
             where: {
-                id : id
+                id: id
             }
         });
 
         return new Response(
             JSON.stringify(novoProduto),
             {
-                status: 201,
+                status: 200,
                 headers: { "Content-Type": "application/json" }
             }
         );
@@ -258,7 +263,7 @@ export async function PUT(request) {
 }
 
 export const config = {
-  api: {
-    bodyParser: false
-  }
+    api: {
+        bodyParser: false
+    }
 };

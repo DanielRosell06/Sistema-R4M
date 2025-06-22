@@ -167,14 +167,14 @@ export default function ProdutosPage() {
             });
 
             if (res.ok) {
-                setCreateModal(false);
+                setEditModal(false);
                 setTitulo("");
                 setModoUso("");
                 setUsoFields([""]);
-
                 setImagemProduto("");
 
                 reloadProdutos()
+
             } else {
                 // Trate erros de API com mais detalhes
                 const errorData = await res.json();
@@ -354,8 +354,11 @@ export default function ProdutosPage() {
                                     type="button"
                                     className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
                                     onClick={() => {
+                                        setTitulo("");
+                                        setModoUso("");
+                                        setUsoFields([""]);
+                                        setImagemProduto("");
                                         setCreateModal(false)
-                                        setUsoFields([""])
                                     }}
                                 >
                                     Cancelar
@@ -392,7 +395,7 @@ export default function ProdutosPage() {
                         <button
                             type="button"
                             className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600"
-                            onClick={handleDeleteProduto}
+                            onClick={handleDeleteProduto()}
                         >
                             Excluir
                         </button>
@@ -519,13 +522,17 @@ export default function ProdutosPage() {
                                 className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
                                 onClick={() => {
                                     setEditModal(false)
-                                    setUsoFields([""])
+                                    setTitulo("");
+                                    setModoUso("");
+                                    setUsoFields([""]);
+                                    setImagemProduto("");
                                 }}
                             >
                                 Cancelar
                             </button>
                             <button
-                                onClick={() => {handleEditProduto()}}
+                                type="button"
+                                onClick={() => { handleEditProduto() }}
                                 className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
                             >
                                 Salvar
