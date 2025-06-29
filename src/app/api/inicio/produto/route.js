@@ -1,3 +1,4 @@
+// File: src/app/api/inicio/produto/route.js
 
 import { prisma } from '../../../../lib/prisma';
 import { v2 as cloudinary } from 'cloudinary';
@@ -42,22 +43,9 @@ export async function POST(request) {
         const modo_de_uso = formData.get('modo_de_uso');
         const imagem = formData.get('imagem');
 
-        console.log({
-            titulo,
-            descricao,
-            modo_de_uso,
-            imagem: imagem ? {
-                name: imagem.name,
-                size: imagem.size,
-                type: imagem.type
-            } : null
-        });
-
         let imagemUrl = "";
 
-        // Processa imagem se for um arquivo válido
         if (imagem && imagem instanceof File && imagem.size > 0) {
-
             const arrayBuffer = await imagem.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
 
@@ -82,7 +70,6 @@ export async function POST(request) {
             imagemUrl = uploadResponse.secure_url;
         }
 
-        // Validação de campos obrigatórios
         if (!titulo || !modo_de_uso || descricao.length === 0) {
             return new Response(
                 JSON.stringify({ message: "Campos obrigatórios faltando" }),
@@ -90,15 +77,17 @@ export async function POST(request) {
             );
         }
 
-        // Cria produto no banco de dados
         const novoProduto = await prisma.produto.create({
             data: {
                 titulo: titulo,
                 descricao: JSON.stringify(descricao),
                 modo_de_uso: modo_de_uso,
-                id_Categoria: -1, // Ajustar conforme sua lógica
-                ranking_top: -1,
-                ranking_categoria: -1,
+                // --- CORREÇÃO AQUI ---
+                // Agora, novos produtos são criados sem categoria (null)
+                id_Categoria: null,
+                // ----
+                ranking_top: 0, // Definido como 0 por padrão
+                ranking_categoria: 0, // Definido como 0 por padrão
                 imagem: imagemUrl,
                 status: "ativo"
             }
@@ -126,6 +115,7 @@ export async function POST(request) {
     }
 }
 
+// ... as funções PUT e DELETE continuam iguais
 export async function DELETE(request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -164,9 +154,6 @@ export async function DELETE(request) {
     }
 }
 
-// AGORA PRECISA IMPLEMENTAR O PUT, FICANDO ESPERTO SE A IMAGEM MUDOU OU NÃO.
-// SE A IMAGEM NÃO MUDAR, NÃO PRECISA FAZER OUTRA REQUISIÃO PARA O CLOUDNARY
-
 export async function PUT(request) {
     try {
         const formData = await request.formData();
@@ -176,15 +163,12 @@ export async function PUT(request) {
         const descricao = formData.getAll('descricao');
         const modo_de_uso = formData.get('modo_de_uso');
         const imagem = formData.get('imagem');
-
-        // Busca o produto atual para obter a imagem existente, caso não seja enviada uma nova
         const produtoAtual = await prisma.produto.findUnique({
             where: { id: id }
         });
 
         let imagemUrl = produtoAtual ? produtoAtual.imagem : "";
 
-        // Processa imagem se for um arquivo válido
         if (typeof imagem !== 'string') {
             if (imagem && imagem instanceof File && imagem.size > 0) {
 
@@ -215,7 +199,6 @@ export async function PUT(request) {
             imagemUrl = imagem;
         }
 
-        // Validação de campos obrigatórios
         if (!titulo || !modo_de_uso || descricao.length === 0) {
             return new Response(
                 JSON.stringify({ message: "Campos obrigatórios faltando" }),
@@ -223,15 +206,12 @@ export async function PUT(request) {
             );
         }
 
-        // Cria produto no banco de dados
         const novoProduto = await prisma.produto.update({
             data: {
                 titulo: titulo,
                 descricao: JSON.stringify(descricao),
                 modo_de_uso: modo_de_uso,
-                id_Categoria: -1, // Ajustar conforme sua lógica
-                ranking_top: -1,
-                ranking_categoria: -1,
+                // id_Categoria: -1, // Manter a lógica de categoria ao editar se necessário
                 imagem: imagemUrl,
                 status: "ativo"
             },
@@ -261,9 +241,3 @@ export async function PUT(request) {
         );
     }
 }
-
-export const config = {
-    api: {
-        bodyParser: false
-    }
-};

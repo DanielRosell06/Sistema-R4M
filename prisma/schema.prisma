@@ -13,18 +13,21 @@ model Categoria {
   titulo       String
   ranking      Int
   ranking_site Int       @default(0)
+  produtos     Produto[]
 }
 
 model Produto {
-  id                Int       @id @default(autoincrement())
+  id                Int    @id @default(autoincrement())
   titulo            String
   descricao         Json
   modo_de_uso       String
-  id_Categoria      Int
   ranking_top       Int
   ranking_categoria Int
-  status            String    @default("ativo")
+  status            String @default("ativo")
   imagem            String
+
+  id_Categoria Int?
+  categoria    Categoria? @relation(fields: [id_Categoria], references: [id])
 }
 
 model Usuario {

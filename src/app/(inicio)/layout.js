@@ -1,3 +1,5 @@
+// File: src/app/(inicio)/layout.js
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./../globals.css";
 import Link from 'next/link';
@@ -9,7 +11,7 @@ export const metadata = {
 
 const geistSans = Geist({
   subsets: ["latin"],
-  display: 'swap', // Adicione isso
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
