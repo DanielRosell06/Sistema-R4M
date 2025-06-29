@@ -10,6 +10,9 @@ import { Skeleton } from "../../..//components/ui/skeleton"
 
 export default function ProdutosPage() {
 
+    // Variavel de pesquisa
+    const [searchText, setSearchText] = useState("")
+
     // MODALS
     const [editModal, setEditModal] = useState(false)
     const [createModal, setCreateModal] = useState(false)
@@ -213,6 +216,8 @@ export default function ProdutosPage() {
                             type="text"
                             placeholder="Pesquisar produto..."
                             className="pl-10 w-full rounded border border-stone-700 bg-stone-800 text-gray-100 focus:border-orange-400 focus:ring-0"
+                            value={searchText}
+                            onChange={e => setSearchText(e.target.value)}
                         />
                     </div>
                 </div>
@@ -226,26 +231,29 @@ export default function ProdutosPage() {
                     </div>
                     :
                     produtos.map((produto, idx) => (
-                        <Produto
-                            onClickRemove={() => {
-                                console.log(produto.id)
-                                setIdExcluir(produto.id)
-                                setDeleteModal(true)
-                            }}
-                            onClickEdit={() => {
-                                setIdEditar(produto.id)
-                                setUsoFields(produto.descricao)
-                                setTitulo(produto.titulo)
-                                setModoUso(produto.modo_de_uso)
-                                setImagemProduto(produto.imagem)
-                                setEditModal(true)
-                            }}
-                            key={idx}
-                            titulo={produto.titulo}
-                            imagemURL={produto.imagem}
-                            descricao={produto.descricao}
-                            modoUso={produto.modo_de_uso}
-                        />
+                        produto.titulo.toUpperCase().includes(searchText.toUpperCase()) ?
+                            <Produto
+                                onClickRemove={() => {
+                                    console.log(produto.id)
+                                    setIdExcluir(produto.id)
+                                    setDeleteModal(true)
+                                }}
+                                onClickEdit={() => {
+                                    setIdEditar(produto.id)
+                                    setUsoFields(produto.descricao)
+                                    setTitulo(produto.titulo)
+                                    setModoUso(produto.modo_de_uso)
+                                    setImagemProduto(produto.imagem)
+                                    setEditModal(true)
+                                }}
+                                key={idx}
+                                titulo={produto.titulo}
+                                imagemURL={produto.imagem}
+                                descricao={produto.descricao}
+                                modoUso={produto.modo_de_uso}
+                            />
+                            :
+                            ""
                     ))}
             </div>
             {
