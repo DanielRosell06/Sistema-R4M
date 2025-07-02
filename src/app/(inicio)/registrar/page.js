@@ -61,11 +61,11 @@ export default function CreateUserForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+    <div className="flex items-center justify-center min-h-screen bg-stone-900">
       <div className="max-w-md w-full">
         <form
           onSubmit={handleSubmit}
-          className="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700"
+          className="bg-stone-800 p-8 rounded-lg shadow-2xl border border-stone-700"
         >
           <h2 className="text-2xl font-bold mb-6 text-center text-white">
             Criar <span className="text-orange-500">Usuário</span>
@@ -75,7 +75,7 @@ export default function CreateUserForm() {
             <div
               className={`mb-4 text-center p-2 rounded border ${
                 mensagem.tipo === "sucesso"
-                  ? "text-green-400 bg-green-900/20 border-green-800"
+                  ? "text-emerald-400 bg-emerald-900/20 border-emerald-800"
                   : "text-red-400 bg-red-900/20 border-red-800"
               }`}
             >
@@ -84,7 +84,7 @@ export default function CreateUserForm() {
           )}
 
           <div className="mb-4">
-            <label className="block mb-2 font-medium text-gray-300" htmlFor="nome">
+            <label className="block mb-2 font-medium text-stone-300" htmlFor="nome">
               Nome
             </label>
             <input
@@ -93,13 +93,13 @@ export default function CreateUserForm() {
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 bg-stone-700 text-white border border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
               placeholder="Digite seu nome completo"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block mb-2 font-medium text-gray-300" htmlFor="username">
+            <label className="block mb-2 font-medium text-stone-300" htmlFor="username">
               Username
             </label>
             <input
@@ -108,13 +108,13 @@ export default function CreateUserForm() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 bg-stone-700 text-white border border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
               placeholder="Escolha um username único"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block mb-2 font-medium text-gray-300" htmlFor="senha">
+            <label className="block mb-2 font-medium text-stone-300" htmlFor="senha">
               Senha
             </label>
             <input
@@ -123,20 +123,20 @@ export default function CreateUserForm() {
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 bg-stone-700 text-white border border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
               placeholder="Digite uma senha segura"
             />
           </div>
 
           <div className="mb-6">
-            <label className="block mb-2 font-medium text-gray-300" htmlFor="tipo">
+            <label className="block mb-2 font-medium text-stone-300" htmlFor="tipo">
               Tipo de Usuário
             </label>
             <select
               id="tipo"
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 bg-stone-700 text-white border border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
             >
               <option value="comum">Comum</option>
               <option value="admin">Admin</option>

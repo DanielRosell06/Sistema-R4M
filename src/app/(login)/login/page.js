@@ -30,27 +30,21 @@ export default function LoginPage() {
             return;
         }
 
-
-        //localStorage.setItem("token", data.token);          Usando cookies ao inves do localstorage
-        //localStorage.setItem("user", JSON.stringify(data.user));
-
         Cookies.set("token", data.token, { expires: 1, path: "/" });
         Cookies.set("user", JSON.stringify(data.user), { expires: 1, path: "/" });
-
-        console.log("cookie")
 
         // redireciona conforme nivel de acesso
     if (data.user.tipo === "admin") {
       router.push("/admin");
     } else {
-      router.push("/");
+      router.push("/produtos");
     }
   }
      return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+    <div className="flex items-center justify-center min-h-screen bg-stone-900">
       <form
         onSubmit={handlesubmit}
-        className="bg-gray-800 p-8 max-w-sm w-full rounded-lg shadow-2xl border border-gray-700"
+        className="bg-stone-800 p-8 max-w-sm w-full rounded-lg shadow-2xl border border-stone-700"
       >
         <h2 className="text-2xl font-bold mb-6 text-center text-white">
           Faça o <span className="text-orange-500">Login</span>
@@ -63,7 +57,7 @@ export default function LoginPage() {
         )}
 
         <div className="mb-4">
-          <label className="block mb-2 font-medium text-gray-300" htmlFor="username">
+          <label className="block mb-2 font-medium text-stone-300" htmlFor="username">
             Username
           </label>
           <input
@@ -71,13 +65,13 @@ export default function LoginPage() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-stone-700 text-white border border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
             placeholder="Digite seu username"
           />
         </div>
 
         <div className="mb-6">
-          <label className="block mb-2 font-medium text-gray-300" htmlFor="senha">
+          <label className="block mb-2 font-medium text-stone-300" htmlFor="senha">
             Senha
           </label>
           <input
@@ -85,7 +79,7 @@ export default function LoginPage() {
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-stone-700 text-white border border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
             placeholder="Digite sua senha"
           />
         </div>

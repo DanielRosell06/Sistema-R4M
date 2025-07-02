@@ -3,6 +3,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./../globals.css";
 import Link from 'next/link';
+import BotaoSair from "./../../components/personalizados/botaoSair";
 
 export const metadata = {
   title: "Create Next App",
@@ -19,7 +20,7 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }) {  
   return (
     <html lang="en" className={`${geistSans.className} ${geistMono.className}`}>
       <body className="antialiased">
@@ -46,6 +47,9 @@ export default function RootLayout({ children }) {
             >
               Administração
             </a>
+          </div>
+          <div>
+            <BotaoSair />
           </div>
         </nav>
         {children}
