@@ -84,7 +84,7 @@ export async function POST(request) {
                 modo_de_uso: modo_de_uso,
                 // --- CORREÇÃO AQUI ---
                 // Agora, novos produtos são criados sem categoria (null)
-                id_Categoria: null,
+                id_Categoria: 1,
                 // ----
                 ranking_top: 0, // Definido como 0 por padrão
                 ranking_categoria: 0, // Definido como 0 por padrão

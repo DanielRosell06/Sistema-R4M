@@ -403,7 +403,7 @@ export default function ProdutosPage() {
                         <button
                             type="button"
                             className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600"
-                            onClick={handleDeleteProduto()}
+                            onClick={() => {handleDeleteProduto()}}
                         >
                             Excluir
                         </button>
