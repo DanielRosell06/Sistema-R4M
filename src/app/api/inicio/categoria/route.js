@@ -1,7 +1,6 @@
 // File: src/app/api/categorias/route.js
 
 import { prisma } from '../../../../lib/prisma';
-import { NextResponse } from 'next/server';
 
 // GET para buscar todas as categorias
 export async function GET() {
@@ -9,9 +8,26 @@ export async function GET() {
     const categorias = await prisma.categoria.findMany({
       orderBy: { ranking: 'asc' }
     });
-    return NextResponse.json(categorias);
+
+    return new Response(
+      JSON.stringify(categorias),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   } catch (error) {
-    return NextResponse.json({ message: "Erro ao buscar categorias" }, { status: 500 });
+    console.error("Erro ao pedir categorias do banco:", error);
+    return new Response(
+      JSON.stringify({
+        message: "Erro interno do servidor",
+        error: error.message
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
 }
 
@@ -20,7 +36,13 @@ export async function POST(request) {
   try {
     const { titulo } = await request.json();
     if (!titulo) {
-      return NextResponse.json({ message: "Título é obrigatório" }, { status: 400 });
+      return new Response(
+        JSON.stringify({ message: "O campo 'titulo' é obrigatório." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
     }
 
     // Apenas um exemplo simples de ranking, você pode ajustar
@@ -30,11 +52,26 @@ export async function POST(request) {
       data: {
         titulo,
         ranking: maxRanking + 1, // Lógica simples de ranking
-        ranking_site: 0
       }
     });
-    return NextResponse.json(novaCategoria, { status: 201 });
+    return new Response(
+      JSON.stringify(novaCategoria),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   } catch (error) {
-    return NextResponse.json({ message: "Erro ao criar categoria" }, { status: 500 });
+    console.error("Erro ao criar categoria:", error);
+    return new Response(
+      JSON.stringify({
+        message: "Erro interno do servidor",
+        error: error.message
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
 }

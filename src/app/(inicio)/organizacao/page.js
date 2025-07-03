@@ -102,6 +102,7 @@ export default function OrganizacaoPage() {
   const [loading, setLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [activeProduct, setActiveProduct] = useState(null);
+  const [loadData, setLoadData] = useState(-1);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -115,27 +116,31 @@ export default function OrganizacaoPage() {
         const products = await productsRes.json();
         const categories = await categoriesRes.json();
 
-        const newColumns = {
-          'top-10': { title: '⭐ Top 10', products: [] },
-          'sem-categoria': { title: 'Sem Categoria', products: [] },
-        };
+        // Inicializa apenas com as categorias do banco
+        const newColumns = {};
         categories.forEach(cat => {
           newColumns[cat.id] = { title: cat.titulo, products: [] };
         });
 
         products.forEach(p => {
           if (!p || !p.id) return;
-          if (p.ranking_top > 0) {
-            newColumns['top-10'].products.push(p);
-          } else if (p.id_Categoria && newColumns[p.id_Categoria]) {
+          if (p.id_Categoria && newColumns[p.id_Categoria]) {
             newColumns[p.id_Categoria].products.push(p);
-          } else {
-            newColumns['sem-categoria'].products.push(p);
           }
         });
 
-        newColumns['top-10'].products.sort((a, b) => a.ranking_top - b.ranking_top);
-        setColumns(newColumns);
+        // Ordena as colunas para que a de ID 1 fique em primeiro
+        const orderedColumns = {};
+        if (newColumns[1]) {
+          orderedColumns[1] = newColumns[1];
+        }
+        Object.keys(newColumns).forEach(key => {
+          if (String(key) !== "1") {
+            orderedColumns[key] = newColumns[key];
+          }
+        });
+
+        setColumns(orderedColumns);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       } finally {
@@ -143,7 +148,7 @@ export default function OrganizacaoPage() {
       }
     }
     fetchData();
-  }, []);
+  }, [loadData]);
 
   const findContainer = id => {
     if (id in columns) return id;
@@ -195,11 +200,7 @@ export default function OrganizacaoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ titulo: newCategoryName }),
       });
-      const newCat = await res.json();
-      setColumns(prev => ({
-        ...prev,
-        [newCat.id]: { title: newCat.titulo, products: [] }
-      }));
+      setLoadData(loadData*-1)
       setNewCategoryName("");
     } catch {
       alert("Erro ao criar categoria");
@@ -296,7 +297,7 @@ export default function OrganizacaoPage() {
           onChange={e => setNewCategoryName(e.target.value)}
           className="bg-stone-700 border-stone-600"
         />
-        <Button onClick={handleCreateCategory}>Criar Categoria</Button>
+        <Button onClick={() => {handleCreateCategory()}}>Criar Categoria</Button>
       </div>
 
       <DndContext
@@ -305,7 +306,7 @@ export default function OrganizacaoPage() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 pb-4 w-[55%] flex-wrap">
           {Object.entries(columns).map(([id, col]) => (
             <CategoryColumn key={id} id={id} title={col.title} products={col.products} onDelete={handleDeleteCategory} />
           ))}

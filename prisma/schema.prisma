@@ -9,25 +9,23 @@ datasource db {
 }
 
 model Categoria {
-  id           Int       @id @default(autoincrement())
-  titulo       String
-  ranking      Int
-  ranking_site Int       @default(0)
-  produtos     Produto[]
+  id       Int       @id @default(autoincrement())
+  titulo   String
+  ranking  Int
+  produtos Produto[]
 }
 
 model Produto {
-  id                Int    @id @default(autoincrement())
+  id                Int       @id @default(autoincrement())
   titulo            String
   descricao         Json
   modo_de_uso       String
-  ranking_top       Int
-  ranking_categoria Int
-  status            String @default("ativo")
+  id_Categoria      Int
+  ranking_top       Int       @default(0)
+  ranking_categoria Int       @default(0)
+  status            String    @default("ativo")
   imagem            String
-
-  id_Categoria Int?
-  categoria    Categoria? @relation(fields: [id_Categoria], references: [id])
+  categoria         Categoria @relation(fields: [id_Categoria], references: [id])
 }
 
 model Usuario {
