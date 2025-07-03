@@ -183,15 +183,7 @@ export default function DraggableList() {
                                         </div>
 
                                         <div className="text-right">
-                                            <div
-                                                className={`
-                        inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all
-                        ${isDragging ? "bg-gray-600 text-gray-400" : "bg-orange-500 text-white"}
-                      `}
-                                            >
-                                                {item.ranking}
-                                            </div>
-                                            <p className="text-xs text-gray-400 mt-1">Ranking</p>
+                                            <p className="text-xs text-gray-400 mt-1">Posição {item.ranking}</p>
                                         </div>
                                     </div>
                                 </div>

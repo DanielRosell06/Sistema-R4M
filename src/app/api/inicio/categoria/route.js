@@ -79,7 +79,6 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const { categoriasNovas } = await request.json();
-    console.log(categoriasNovas)
 
     if (!Array.isArray(categoriasNovas)) {
       return new Response(

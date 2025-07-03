@@ -1,34 +1,52 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react" // Importei o useEffect
 import { Plus, GripVertical, X } from "lucide-react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 
-// Em JS, não temos interfaces. A estrutura dos objetos é a mesma.
-const availableProducts = [
-  { id: "1", name: "Smartphone Galaxy", image: "/placeholder.svg?height=60&width=60" },
-  { id: "2", name: "Notebook Dell", image: "/placeholder.svg?height=60&width=60" },
-  { id: "3", name: "Fone Bluetooth", image: "/placeholder.svg?height=60&width=60" },
-  { id: "4", name: "Tablet iPad", image: "/placeholder.svg?height=60&width=60" },
-  { id: "5", name: "Smartwatch Apple", image: "/placeholder.svg?height=60&width=60" },
-  { id: "6", name: "Câmera Canon", image: "/placeholder.svg?height=60&width=60" },
-  { id: "7", name: "Monitor 4K", image: "/placeholder.svg?height=60&width=60" },
-  { id: "8", name: "Teclado Mecânico", image: "/placeholder.svg?height=60&width=60" },
-  { id: "9", name: "Mouse Gamer", image: "/placeholder.svg?height=60&width=60" },
-  { id: "10", name: "Webcam HD", image: "/placeholder.svg?height=60&width=60" },
-  { id: "11", name: "Caixa de Som", image: "/placeholder.svg?height=60&width=60" },
-  { id: "12", name: "Carregador Wireless", image: "/placeholder.svg?height=60&width=60" },
-]
-
 export default function ProductManager() {
-  // As anotações de tipo <...> são removidas dos hooks do useState
+  const [availableProducts, setAvailableProducts] = useState([])
   const [selectedProducts, setSelectedProducts] = useState([])
+  const [flag, setFlag] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/inicio/produto")
+      .then((res) => res.json())
+      .then((data) => setAvailableProducts(data))
+      .catch(() => setAvailableProducts([]))
+  }, [])
+
+  useEffect(() => {
+    if (flag) {
+      console.log(availableProducts)
+      const initiallySelected = availableProducts
+        .filter((product) => product.ranking_top >= 1)
+        .sort((a, b) => a.ranking_top - b.ranking_top)
+      setSelectedProducts(initiallySelected)
+    }
+    setFlag(true)
+  }, [availableProducts])
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
 
-  // As anotações de tipo dos parâmetros das funções são removidas
+  // ✅ PONTO 1: EFEITO PARA ATUALIZAR O RANKING
+  // Este useEffect é acionado sempre que a lista `selectedProducts` muda.
+  useEffect(() => {
+    // Mapeamos a lista para criar uma nova com a propriedade `ranking_top` atualizada.
+    const updatedProducts = selectedProducts.map((product, index) => ({
+      ...product,
+      ranking_top: index + 1, // A posição é o índice do array + 1
+    }))
+
+    // Verificamos se há necessidade de atualização para evitar loops infinitos de renderização.
+    if (JSON.stringify(updatedProducts) !== JSON.stringify(selectedProducts)) {
+      setSelectedProducts(updatedProducts)
+    }
+  }, [selectedProducts]) // O array de dependência garante que o efeito rode apenas quando a lista mudar.
+
   const addProduct = (product) => {
     if (selectedProducts.length < 10 && !selectedProducts.find((p) => p.id === product.id)) {
       setSelectedProducts([...selectedProducts, product])
@@ -65,7 +83,7 @@ export default function ProductManager() {
 
     newProducts.splice(dropIndex, 0, draggedProduct)
 
-    setSelectedProducts(newProducts)
+    setSelectedProducts(newProducts) // A atualização do estado aqui acionará o useEffect do ranking
     setDraggedIndex(null)
     setDragOverIndex(null)
   }
@@ -76,8 +94,30 @@ export default function ProductManager() {
   }
 
   const handleSave = () => {
-    console.log("Produtos salvos:", selectedProducts)
-    alert(`${selectedProducts.length} produtos salvos com sucesso!`)
+    console.log(selectedProducts)
+    const saveTop10 = async () => {
+      try {
+        const body = JSON.stringify([
+          ...selectedProducts,
+          ...availableProducts.filter(
+            (p) => !selectedProducts.find((sp) => sp.id === p.id)
+          ),
+        ])
+        const res = await fetch("/api/inicio/produto_top_10", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body,
+        })
+        if (!res.ok) throw new Error("Erro ao salvar o Top 10")
+        await res.json()
+        
+      } catch (err) {
+        alert("Erro ao salvar o Top 10")
+      }
+    }
+    saveTop10()
   }
 
   const isMaxReached = selectedProducts.length >= 10
@@ -85,15 +125,14 @@ export default function ProductManager() {
   return (
     <div className="min-h-screen bg-stone-900 p-6">
       <div className="max-w-2xl mx-auto">
-        {/* Botão de adicionar */}
+        {/* Botão de adicionar (sem alterações) */}
         <div className="mb-6">
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
               <Button
                 disabled={isMaxReached}
-                className={`w-12 h-12 rounded-full ${
-                  isMaxReached ? "bg-gray-500 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
-                } text-white font-bold text-xl`}
+                className={`w-12 h-12 rounded-full ${isMaxReached ? "bg-gray-500 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
+                  } text-white font-bold text-xl`}
               >
                 <Plus className="w-6 h-6" />
               </Button>
@@ -109,16 +148,21 @@ export default function ProductManager() {
                     .map((product) => (
                       <div key={product.id} className="flex items-center justify-between p-3 bg-stone-700 rounded-lg">
                         <div className="flex items-center space-x-3">
-                          <img
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-10 h-10 rounded object-cover"
-                          />
-                          <span className="text-white">{product.name}</span>
+                          {product.imagem == "" ?
+                            <div className="w-10 h-10 rounded object-cover bg-stone-600">
+                            </div>
+                            :
+                            <img
+                              src={product.imagem}
+                              alt={product.titulo}
+                              className="w-10 h-10 rounded object-cover"
+                            />
+                          }
+                          <span className="text-white">{product.titulo}</span>
                         </div>
                         <Button
                           onClick={() => addProduct(product)}
-                          className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1"
+                          className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 ml-3"
                           disabled={isMaxReached}
                         >
                           Adicionar +
@@ -134,16 +178,13 @@ export default function ProductManager() {
         {/* Lista de produtos selecionados */}
         <div className="bg-stone-800 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white text-lg font-semibold">⭐Top 10 ({selectedProducts.length}/10)</h2>
+            <h2 className="text-white text-lg font-semibold">⭐ Top 10 ({selectedProducts.length}/10)</h2>
           </div>
 
           {selectedProducts.length === 0 ? (
-            <div className="text-stone-400 text-center py-8">Nenhum produto selecionado</div>
+            <div className="text-stone-400 text-center py-8">Nenhum produto no Top 10</div>
           ) : (
-            <div
-              className="space-y-2"
-              onDragLeave={() => setDragOverIndex(null)}
-            >
+            <div className="space-y-2" onDragLeave={() => setDragOverIndex(null)}>
               {selectedProducts.map((product, index) => (
                 <React.Fragment key={product.id}>
                   {dragOverIndex === index && draggedIndex !== index && (
@@ -157,27 +198,45 @@ export default function ProductManager() {
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`flex items-center justify-between p-3 bg-stone-700 rounded-lg cursor-move transition-all duration-200 ${
-                      draggedIndex === index ? "opacity-50 scale-95 shadow-lg" : "hover:bg-stone-600"
-                    }`}
+                    className={`flex items-center justify-between p-3 bg-stone-700 rounded-lg cursor-move transition-all duration-200 ${draggedIndex === index ? "opacity-50 scale-95 shadow-lg" : "hover:bg-stone-600"
+                      }`}
                   >
                     <div className="flex items-center space-x-3">
                       <GripVertical className="w-5 h-5 text-stone-400" />
-                      <img
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        className="w-12 h-12 rounded object-cover"
-                      />
-                      <span className="text-white">{product.name}</span>
+                      {product.imagem == "" ?
+                        <div className="w-12 h-12 rounded object-cover bg-stone-600">
+                        </div>
+                        :
+                        <img
+                          src={product.imagem}
+                          alt={product.titulo}
+                          className="w-12 h-12 rounded object-cover"
+                        />
+                      }
+                      <span className="text-white">{product.titulo}</span>
                     </div>
-                    <Button
-                      onClick={() => removeProduct(product.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+
+                    {/* ✅ PONTO 2: ELEMENTO DO RANKING E BOTÃO DE REMOVER */}
+                    <div className="flex items-center space-x-4">
+                      {/* Bolinha laranja com a posição do ranking */}
+                      <div className="ml-3 flex items-center justify-center w-6 h-6 bg-orange-500 rounded-full text-sm font-bold text-white">
+                        {index + 1}
+                      </div>
+
+                      {/* Botão de remover */}
+                      <Button
+                        onClick={() => {
+                          removeProduct(product.id)
+                          product.ranking_top = 0
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+
                   </div>
                 </React.Fragment>
               ))}
@@ -196,7 +255,7 @@ export default function ProductManager() {
           )}
         </div>
 
-        {/* Botão de salvar */}
+        {/* Botão de salvar (sem alterações) */}
         <div className="flex justify-center">
           <Button
             onClick={handleSave}
