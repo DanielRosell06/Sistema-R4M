@@ -75,3 +75,56 @@ export async function POST(request) {
     );
   }
 }
+
+export async function PUT(request) {
+  try {
+    const { categoriasNovas } = await request.json();
+    console.log(categoriasNovas)
+
+    if (!Array.isArray(categoriasNovas)) {
+      return new Response(
+        JSON.stringify({ message: "O campo 'categoriasNovas' deve ser um array." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    // Atualiza todos os rankings das categorias para 0
+    await prisma.categoria.updateMany({
+      data: { ranking: 0 }
+    });
+
+    // Apenas um exemplo simples de ranking, você pode ajustar
+    let CategoriasAtualizadas = [];
+    for (let i = 0; i < categoriasNovas.length; i++) {
+      const idCategoria = categoriasNovas[i].id;
+      const categoriaAtualizada = await prisma.categoria.update({
+        where: { id : parseInt(idCategoria, 10) },
+        data: { ranking: categoriasNovas[i].ranking }
+      });
+      CategoriasAtualizadas.push(categoriaAtualizada);
+    }
+
+    return new Response(
+      JSON.stringify(CategoriasAtualizadas),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  } catch (error) {
+    console.error("Erro ao atualizar categoria:", error);
+    return new Response(
+      JSON.stringify({
+        message: "Erro interno do servidor",
+        error: error.message
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+}

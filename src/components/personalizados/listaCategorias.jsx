@@ -4,9 +4,12 @@ import { useState } from "react"
 import { GripVertical } from "lucide-react"
 import { Card } from "../ui/card"
 import { useEffect } from "react"
+import { Button } from "../ui/button"
 
 export default function DraggableList() {
     const [items, setItems] = useState([])
+    const [itemsInicial, setItemsInicial] = useState([])
+    const [loadingSave, setloadingSave] = useState(-1)
 
     useEffect(() => {
         const fetchCategorias = async () => {
@@ -17,6 +20,7 @@ export default function DraggableList() {
                 }
                 let data = await res.json()
                 data = data.filter(item => item.titulo !== "Sem Categoria")
+                setItemsInicial(data)
                 setItems(data)
             } catch (err) {
                 console.error("Erro ao buscar categorias:", err)
@@ -25,6 +29,30 @@ export default function DraggableList() {
         }
         fetchCategorias()
     }, [])
+
+    const fetchAtualizarCategorias = async () => {
+        try {
+            console.log(items)
+            const res = await fetch("/api/inicio/categoria", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ categoriasNovas: items }),
+            })
+            setloadingSave(1)
+            fetchCategorias()
+            if (!res.ok) {
+                throw new Error(`Erro HTTP: ${res.status}`)
+            }
+            let data = await res.json()
+            data = data.filter(item => item.titulo !== "Sem Categoria")
+            setItems(data)
+        } catch (err) {
+            console.error("Erro ao buscar categorias:", err)
+            // Opcional: mostrar mensagem de erro para o usuário
+        }
+    }
 
     const [draggedItem, setDraggedItem] = useState(null)
     const [dragOverIndex, setDragOverIndex] = useState(null)
@@ -101,7 +129,23 @@ export default function DraggableList() {
                 Arraste os itens usando o ícone à esquerda para reordenar a lista
             </p>
 
-            <div className="space-y-2">
+            <div className="flex">
+                <Button
+                    className={(itemsInicial == items ? "bg-stone-600 text-stone-400" : "bg-orange-500 text-white hover:bg-orange-600")}
+                    onClick={() => { 
+                        fetchAtualizarCategorias() 
+                        setloadingSave(0)
+                    }}
+                >
+                    Salvar
+                </Button>
+                {
+                    loadingSave === 0 ? <h1 className="mt-auto mb-auto ml-4">Salvando Alterações...</h1> : 
+                    loadingSave === 1 ? <h1 className="mt-auto mb-auto ml-4">Alterções Salvas!</h1> : ""
+                }
+            </div>
+
+            <div className="space-y-2 mt-4">
                 {displayItems.map((item, index) => {
                     const isDragging = draggedItem?.id === item.id
                     const isDropZone = dragOverIndex === index && draggedItem?.id !== item.id
@@ -156,6 +200,7 @@ export default function DraggableList() {
                     )
                 })}
             </div>
+
         </div>
     )
 }

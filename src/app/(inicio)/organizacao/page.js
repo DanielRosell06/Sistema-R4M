@@ -66,7 +66,7 @@ function CategoryColumn({ id, title, products, onDelete }) {
     <div className="bg-stone-800 rounded-lg p-4 w-[47%] flex-shrink-0 flex flex-col h-[400px]">
       <div className="flex justify-between items-center mb-4">
         <h3 className={(title == "Sem Categoria" ? "text-stone-400 italic" : "text-orange-400") + " font-bold text-lg "}>{title}</h3>
-        {id !== 'top-10' && id !== 'sem-categoria' && (
+        {title !== 'Sem Categoria' && (
           <Button
             variant="ghost"
             size="icon"
@@ -294,7 +294,7 @@ export default function OrganizacaoPage() {
       <div className='w-[100%] flex'>
         <div className='w-[55%]'>
           <div className='flex'>
-            <div className="mt-4 mb-4 p-4 bg-stone-800 rounded-lg flex gap-4 items-center w-[80%]">
+            <div className="mt-4 mb-4 p-4 bg-stone-800 rounded-lg flex gap-4 items-center w-[76%]">
               <Input
                 type="text"
                 placeholder="Nome da nova categoria"
@@ -305,7 +305,7 @@ export default function OrganizacaoPage() {
               <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => { handleCreateCategory() }}>Criar Categoria</Button>
             </div>
             <Button
-              className="ml-4 mt-auto mb-auto bg-orange-500 hover:bg-orange-600"
+              className="ml-[4%] w-[16%] mt-auto mb-auto bg-orange-500 hover:bg-orange-600"
               onClick={handleSaveChanges}>
               Salvar
             </Button>
