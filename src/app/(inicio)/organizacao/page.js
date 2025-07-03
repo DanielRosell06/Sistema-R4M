@@ -23,6 +23,7 @@ import { Skeleton } from "../../../components/ui/skeleton";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import DraggableList from "../../../components/personalizados/listaCategorias";
+import ProductManager from "../../../components/personalizados/top10";
 
 // --- Componente para o Item do Produto (arrastável) ---
 function ProductItem({ product }) {
@@ -288,20 +289,26 @@ export default function OrganizacaoPage() {
           <h1 className="text-3xl mb-1 font-bold text-white">Organização de Produtos</h1>
           <p className="text-gray-400">Arraste os produtos entre as colunas para organizá-los.</p>
         </div>
-        <Button onClick={handleSaveChanges} className="bg-orange-500 hover:bg-orange-600">Salvar Alterações</Button>
       </div>
 
       <div className='w-[100%] flex'>
         <div className='w-[55%]'>
-          <div className="mb-8 p-4 bg-stone-800 rounded-lg flex gap-4 items-center w-[97%]">
-            <Input
-              type="text"
-              placeholder="Nome da nova categoria"
-              value={newCategoryName}
-              onChange={e => setNewCategoryName(e.target.value)}
-              className="bg-stone-700 border-stone-600"
-            />
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => { handleCreateCategory() }}>Criar Categoria</Button>
+          <div className='flex'>
+            <div className="mt-4 mb-4 p-4 bg-stone-800 rounded-lg flex gap-4 items-center w-[80%]">
+              <Input
+                type="text"
+                placeholder="Nome da nova categoria"
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                className="bg-stone-700 border-stone-600"
+              />
+              <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => { handleCreateCategory() }}>Criar Categoria</Button>
+            </div>
+            <Button
+              className="ml-4 mt-auto mb-auto bg-orange-500 hover:bg-orange-600"
+              onClick={handleSaveChanges}>
+              Salvar
+            </Button>
           </div>
           <DndContext
             sensors={sensors}
@@ -317,7 +324,10 @@ export default function OrganizacaoPage() {
             <DragOverlay>{activeProduct ? <ProductItem product={activeProduct} /> : null}</DragOverlay>
           </DndContext>
         </div>
-        <DraggableList width="20px" />
+        <div className='flex flex-col w-[45%]'>
+          <DraggableList />
+          <ProductManager></ProductManager>
+        </div>
       </div>
     </div>
   );
