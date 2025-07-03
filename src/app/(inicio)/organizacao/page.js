@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Skeleton } from "../../../components/ui/skeleton";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
+import DraggableList from "../../../components/personalizados/listaCategorias";
 
 // --- Componente para o Item do Produto (arrastável) ---
 function ProductItem({ product }) {
@@ -61,9 +62,9 @@ function CategoryColumn({ id, title, products, onDelete }) {
   const validProducts = products.filter(p => p && p.id);
 
   return (
-    <div className="bg-stone-800 rounded-lg p-4 w-full md:w-80 flex-shrink-0 flex flex-col min-h-[400px]">
+    <div className="bg-stone-800 rounded-lg p-4 w-[47%] flex-shrink-0 flex flex-col h-[400px]">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg text-orange-400">{title}</h3>
+        <h3 className={(title == "Sem Categoria" ? "text-stone-400 italic" : "text-orange-400") + " font-bold text-lg "}>{title}</h3>
         {id !== 'top-10' && id !== 'sem-categoria' && (
           <Button
             variant="ghost"
@@ -71,16 +72,17 @@ function CategoryColumn({ id, title, products, onDelete }) {
             className="text-gray-400 hover:text-red-500 hover:bg-red-500/10"
             onClick={() => onDelete(id)}
           >
-            {/* ícone de lixeira */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 7h12M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
+            </svg>
           </Button>
         )}
       </div>
       <SortableContext id={id.toString()} items={validProducts.map(p => p.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setDroppableRef}
-          className={`flex-grow bg-stone-900/50 p-2 rounded-md min-h-[100px] space-y-2 ${
-            isOver ? 'ring-2 ring-offset-2 ring-orange-500' : ''
-          }`}
+          className={`flex-grow bg-stone-900/50 p-2 rounded-md min-h-[100px] space-y-2 ${isOver ? 'ring-2 ring-offset-2 ring-orange-500' : ''
+            }`}
         >
           {validProducts.map(p => (
             <ProductItem key={p.id} product={p} />
@@ -200,7 +202,7 @@ export default function OrganizacaoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ titulo: newCategoryName }),
       });
-      setLoadData(loadData*-1)
+      setLoadData(loadData * -1)
       setNewCategoryName("");
     } catch {
       alert("Erro ao criar categoria");
@@ -289,30 +291,34 @@ export default function OrganizacaoPage() {
         <Button onClick={handleSaveChanges} className="bg-orange-500 hover:bg-orange-600">Salvar Alterações</Button>
       </div>
 
-      <div className="mb-8 p-4 bg-stone-800 rounded-lg flex gap-4 items-center">
-        <Input
-          type="text"
-          placeholder="Nome da nova categoria"
-          value={newCategoryName}
-          onChange={e => setNewCategoryName(e.target.value)}
-          className="bg-stone-700 border-stone-600"
-        />
-        <Button onClick={() => {handleCreateCategory()}}>Criar Categoria</Button>
-      </div>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={pointerWithin}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-4 pb-4 w-[55%] flex-wrap">
-          {Object.entries(columns).map(([id, col]) => (
-            <CategoryColumn key={id} id={id} title={col.title} products={col.products} onDelete={handleDeleteCategory} />
-          ))}
+      <div className='w-[100%] flex'>
+        <div className='w-[55%]'>
+          <div className="mb-8 p-4 bg-stone-800 rounded-lg flex gap-4 items-center w-[97%]">
+            <Input
+              type="text"
+              placeholder="Nome da nova categoria"
+              value={newCategoryName}
+              onChange={e => setNewCategoryName(e.target.value)}
+              className="bg-stone-700 border-stone-600"
+            />
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => { handleCreateCategory() }}>Criar Categoria</Button>
+          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={pointerWithin}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex gap-4 pb-4 w-[100%] flex-wrap">
+              {Object.entries(columns).map(([id, col]) => (
+                <CategoryColumn key={id} id={id} title={col.title} products={col.products} onDelete={handleDeleteCategory} />
+              ))}
+            </div>
+            <DragOverlay>{activeProduct ? <ProductItem product={activeProduct} /> : null}</DragOverlay>
+          </DndContext>
         </div>
-        <DragOverlay>{activeProduct ? <ProductItem product={activeProduct} /> : null}</DragOverlay>
-      </DndContext>
+        <DraggableList width="20px" />
+      </div>
     </div>
   );
 }
