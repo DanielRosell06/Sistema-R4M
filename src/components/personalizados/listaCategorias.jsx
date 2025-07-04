@@ -113,7 +113,7 @@ export default function Component() {
 
     return (
         <div className="bg-stone-900 p-6">
-            <div className="max-w-md mx-auto">
+            <div className="w-full mx-auto">
                 <div className="bg-stone-800 rounded-lg p-4">
                     <div className="mb-4">
                         <div className="flex items-center gap-2 mb-2">

@@ -106,7 +106,7 @@ export default function OrganizacaoPage() {
 
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
-        distance: 8,
+      distance: 8,
     },
   }));
 
@@ -127,17 +127,17 @@ export default function OrganizacaoPage() {
         });
 
         products.forEach(p => {
-            if (!p || !p.id) return;
-            // MELHORIA: Garante que o produto vá para 'Sem Categoria' se sua categoria não existir
-            const categoryId = p.id_Categoria && newColumns[p.id_Categoria] ? p.id_Categoria : 1;
-            if (newColumns[categoryId]) {
-                newColumns[categoryId].products.push(p);
-            }
+          if (!p || !p.id) return;
+          // MELHORIA: Garante que o produto vá para 'Sem Categoria' se sua categoria não existir
+          const categoryId = p.id_Categoria && newColumns[p.id_Categoria] ? p.id_Categoria : 1;
+          if (newColumns[categoryId]) {
+            newColumns[categoryId].products.push(p);
+          }
         });
 
         // Ordena os produtos dentro de cada categoria pelo ranking
         Object.values(newColumns).forEach(col => {
-            col.products.sort((a, b) => a.ranking_categoria - b.ranking_categoria);
+          col.products.sort((a, b) => a.ranking_categoria - b.ranking_categoria);
         });
 
         const orderedColumns = {};
@@ -186,27 +186,27 @@ export default function OrganizacaoPage() {
     if (!fromContainerId || !toContainerId) return;
 
     setColumns((prev) => {
-        const newCols = JSON.parse(JSON.stringify(prev));
-        const sourceProducts = newCols[fromContainerId].products;
-        const activeProductIndex = sourceProducts.findIndex(p => p.id === active.id);
-        
-        if (activeProductIndex === -1) return prev;
+      const newCols = JSON.parse(JSON.stringify(prev));
+      const sourceProducts = newCols[fromContainerId].products;
+      const activeProductIndex = sourceProducts.findIndex(p => p.id === active.id);
 
-        const [movedItem] = sourceProducts.splice(activeProductIndex, 1);
-        const destProducts = newCols[toContainerId].products;
-        let overProductIndex;
-        
-        if(over.id in newCols){
-            // Dropping on container
-            overProductIndex = destProducts.length;
-        } else {
-            // Dropping on item
-            overProductIndex = destProducts.findIndex(p => p.id === over.id);
-        }
+      if (activeProductIndex === -1) return prev;
 
-        destProducts.splice(overProductIndex >= 0 ? overProductIndex : destProducts.length, 0, movedItem);
-        
-        return newCols;
+      const [movedItem] = sourceProducts.splice(activeProductIndex, 1);
+      const destProducts = newCols[toContainerId].products;
+      let overProductIndex;
+
+      if (over.id in newCols) {
+        // Dropping on container
+        overProductIndex = destProducts.length;
+      } else {
+        // Dropping on item
+        overProductIndex = destProducts.findIndex(p => p.id === over.id);
+      }
+
+      destProducts.splice(overProductIndex >= 0 ? overProductIndex : destProducts.length, 0, movedItem);
+
+      return newCols;
     });
   }
 
@@ -266,29 +266,83 @@ export default function OrganizacaoPage() {
   // (O código foi omitido por brevidade, mas você deve mantê-lo como estava)
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-900 text-gray-100 p-8">
-        <div className="flex justify-between items-center mb-6">
+      <div className="flex-1 space-y-8 p-8 pt-6 bg-stone-900 text-stone-300">
+        {/* Cabeçalho Principal */}
+        <div className="flex items-center justify-between space-y-2">
           <div>
-            <Skeleton className="h-9 w-72 mb-2 bg-stone-700" />
-            <Skeleton className="h-5 w-96 bg-stone-700" />
+            <Skeleton className="h-8 w-64 bg-stone-700" />
+            <Skeleton className="h-4 w-96 mt-2 bg-stone-700" />
           </div>
-          <Skeleton className="h-10 w-36 bg-orange-500/50" />
         </div>
-        <div className="mb-8 p-4 bg-stone-800 rounded-lg flex gap-4 items-center">
-          <Skeleton className="h-10 flex-grow bg-stone-700" />
-          <Skeleton className="h-10 w-36 bg-stone-700" />
+
+        {/* Controles Superiores: Input e Botões */}
+        <div className="flex items-end gap-2">
+          <div className="flex-1 max-w-sm">
+            {/* Input Falso */}
+            <Skeleton className="h-10 w-full bg-stone-700" />
+          </div>
+          {/* Botão "Criar Categoria" */}
+          <Skeleton className="h-10 w-32 bg-orange-500" />
+          {/* Botão "Salvar" */}
+          <Skeleton className="h-10 w-24 bg-orange-500" />
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-stone-800 rounded-lg p-4 w-full md:w-80 flex-shrink-0 flex flex-col min-h-[400px]">
-              <Skeleton className="h-7 w-32 mb-4 bg-orange-400/50" />
+
+        {/* Layout Principal: Colunas de Produtos e Sidebar */}
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Colunas de Categorias (2/3 da tela) */}
+          <div className="lg:col-span-2 grid gap-6 md:grid-cols-2">
+            {/* Coluna de Categoria 1 */}
+            <div className="rounded-xl border border-stone-700 bg-stone-800 p-4 space-y-4">
+              <Skeleton className="h-6 w-1/2 bg-stone-700" />
+              <div className="p-6 text-center text-sm">
+                <Skeleton className="h-4 w-3/4 mx-auto bg-stone-700" />
+              </div>
+            </div>
+
+            {/* Coluna de Categoria 2 (com produtos) */}
+            <div className="rounded-xl border border-stone-700 bg-stone-800 p-4 space-y-4">
+              <Skeleton className="h-6 w-3/4 bg-stone-700" />
               <div className="space-y-3">
+                <Skeleton className="h-16 w-full bg-stone-700" />
+                <Skeleton className="h-16 w-full bg-stone-700" />
+                <Skeleton className="h-16 w-full bg-stone-700" />
+                <Skeleton className="h-16 w-full bg-stone-700" />
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar (1/3 da tela) */}
+          <div className="lg:col-span-1 flex flex-col gap-8">
+            {/* Box de Organizar Categorias */}
+            <div className="rounded-xl border border-stone-700 bg-stone-800 p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-6 w-40 bg-stone-700" />
+                <Skeleton className="h-8 w-32 bg-stone-700" />
+              </div>
+              <Skeleton className="h-4 w-full bg-stone-700" />
+              <div className="space-y-3">
+                <Skeleton className="h-12 w-full bg-stone-700" />
+                <Skeleton className="h-12 w-full bg-stone-700" />
+              </div>
+            </div>
+
+            {/* Box do Top 10 */}
+            <div className="rounded-xl border border-stone-700 bg-stone-800 p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-7 w-28 bg-stone-700" />
+                <Skeleton className="h-8 w-8 rounded-full bg-orange-500" />
+              </div>
+              <div className="flex justify-end">
+                <Skeleton className="h-8 w-32 bg-stone-700" />
+              </div>
+              <div className="space-y-3">
+                <Skeleton className="h-14 w-full bg-stone-700" />
                 <Skeleton className="h-14 w-full bg-stone-700" />
                 <Skeleton className="h-14 w-full bg-stone-700" />
                 <Skeleton className="h-14 w-full bg-stone-700" />
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
     );
