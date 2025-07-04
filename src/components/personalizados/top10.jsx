@@ -1,16 +1,18 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Plus, GripVertical, X } from "lucide-react"
+import { Plus, GripVertical, X, Save, Check } from "lucide-react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+import { motion, Reorder } from "framer-motion"
 
 export default function ProductManager() {
   const [availableProducts, setAvailableProducts] = useState([])
   const [selectedProducts, setSelectedProducts] = useState([])
   const [initialProducts, setInitialProducts] = useState([]) // Guarda a lista original
   const [hasChanges, setHasChanges] = useState(false) // Controla se há mudanças
-
+  const [isSaved, setIsSaved] = useState(false) // Controla estado "Salvo"
+  const [isLoading, setIsLoading] = useState(false) // Controla estado "Salvando"
   const [flag, setFlag] = useState(false)
 
   useEffect(() => {
@@ -34,102 +36,112 @@ export default function ProductManager() {
   }, [availableProducts])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [draggedIndex, setDraggedIndex] = useState(null)
-  const [dragOverIndex, setDragOverIndex] = useState(null)
 
-  useEffect(() => {
-    const updatedProducts = selectedProducts.map((product, index) => ({
-      ...product,
-      ranking_top: index + 1,
-    }))
-    if (JSON.stringify(updatedProducts) !== JSON.stringify(selectedProducts)) {
-      setSelectedProducts(updatedProducts)
-    }
-  }, [selectedProducts])
-  
+  // Função para comparar se houve mudanças (ordem ou produtos)
+  const checkForChanges = (currentProducts, initialProducts) => {
+    // Se tamanhos diferentes, houve mudança
+    if (currentProducts.length !== initialProducts.length) return true
+    
+    // Compara se todos os produtos estão na mesma ordem
+    return currentProducts.some((product, index) => {
+      const initialProduct = initialProducts[index]
+      return !initialProduct || product.id !== initialProduct.id
+    })
+  }
+
   // ✅ PONTO 3: EFEITO QUE COMPARA O ESTADO ATUAL COM O INICIAL
   useEffect(() => {
-    // Compara a ordem dos IDs da lista atual com a original
-    const currentOrder = JSON.stringify(selectedProducts.map(p => p.id));
-    const initialOrder = JSON.stringify(initialProducts.map(p => p.id));
-    
-    // Se for diferente, ativa o flag de mudanças
-    if (currentOrder !== initialOrder) {
-      setHasChanges(true);
-    } else {
-      setHasChanges(false);
+    if (initialProducts.length > 0 || selectedProducts.length > 0) {
+      const hasChangesDetected = checkForChanges(selectedProducts, initialProducts)
+      setHasChanges(hasChangesDetected)
+      
+      // Reset do estado "salvo" quando há mudanças
+      if (hasChangesDetected) {
+        setIsSaved(false)
+      }
     }
-  }, [selectedProducts, initialProducts]);
+  }, [selectedProducts, initialProducts])
+
+  // Atualiza ranking quando a lista muda
+  useEffect(() => {
+    if (selectedProducts.length > 0) {
+      setSelectedProducts(prevProducts => 
+        prevProducts.map((product, index) => ({
+          ...product,
+          ranking_top: index + 1,
+        }))
+      )
+    }
+  }, [selectedProducts.map(p => p.id).join(',')])
 
   const addProduct = (product) => {
     if (selectedProducts.length < 10 && !selectedProducts.find((p) => p.id === product.id)) {
-      setSelectedProducts([...selectedProducts, product])
+      const newProduct = {
+        ...product,
+        ranking_top: selectedProducts.length + 1,
+      }
+      setSelectedProducts([...selectedProducts, newProduct])
     }
   }
 
   const removeProduct = (productId) => {
-    setSelectedProducts(selectedProducts.filter((p) => p.id !== productId))
+    setSelectedProducts(prevProducts => {
+      const filtered = prevProducts.filter((p) => p.id !== productId)
+      // Reajusta os rankings após remoção
+      return filtered.map((product, index) => ({
+        ...product,
+        ranking_top: index + 1,
+      }))
+    })
   }
 
-  const handleDragStart = (e, index) => {
-    setDraggedIndex(index)
-    e.dataTransfer.effectAllowed = "move"
-  }
+  const handleSave = async () => {
+    if (!hasChanges) return
+    
+    setIsLoading(true)
+    try {
+      // Prepara os produtos selecionados com ranking atualizado
+      const selectedWithRanking = selectedProducts.map((product, index) => ({
+        ...product,
+        ranking_top: index + 1,
+      }))
+      
+      // Produtos não selecionados devem ter ranking_top = 0
+      const unselectedProducts = availableProducts
+        .filter(p => !selectedProducts.find(sp => sp.id === p.id))
+        .map(product => ({
+          ...product,
+          ranking_top: 0,
+        }))
+      
+      // Combina todos os produtos para enviar
+      const allProducts = [...selectedWithRanking, ...unselectedProducts]
+      
+      const res = await fetch("/api/inicio/produto_top_10", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(allProducts),
+      })
+      
+      if (!res.ok) throw new Error("Erro ao salvar o Top 10")
+      await res.json()
+      
+      // ✅ PONTO 4: APÓS SALVAR, ATUALIZA O ESTADO INICIAL
+      setInitialProducts([...selectedProducts]);
+      setHasChanges(false);
+      setIsSaved(true);
+      
+      // Reset do estado "salvo" após 3 segundos
+      setTimeout(() => {
+        setIsSaved(false)
+      }, 10000)
 
-  const handleDragEnter = (e, index) => {
-    e.preventDefault()
-    if (draggedIndex !== null) {
-      setDragOverIndex(index)
+    } catch (err) {
+      console.error("Erro ao salvar:", err)
+      alert("Erro ao salvar o Top 10")
+    } finally {
+      setIsLoading(false)
     }
-  }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-  }
-
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault()
-    if (draggedIndex === null) return
-    const newProducts = [...selectedProducts]
-    const [draggedProduct] = newProducts.splice(draggedIndex, 1)
-    newProducts.splice(dropIndex, 0, draggedProduct)
-    setSelectedProducts(newProducts)
-    setDraggedIndex(null)
-    setDragOverIndex(null)
-  }
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null)
-    setDragOverIndex(null)
-  }
-
-  const handleSave = () => {
-    const saveTop10 = async () => {
-      try {
-        const body = JSON.stringify([
-          ...selectedProducts,
-          ...availableProducts.filter(
-            (p) => !selectedProducts.find((sp) => sp.id === p.id)
-          ),
-        ])
-        const res = await fetch("/api/inicio/produto_top_10", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body,
-        })
-        if (!res.ok) throw new Error("Erro ao salvar o Top 10")
-        await res.json()
-        
-        // ✅ PONTO 4: APÓS SALVAR, ATUALIZA O ESTADO INICIAL
-        setInitialProducts(selectedProducts);
-        alert("Top 10 salvo com sucesso!");
-
-      } catch (err) {
-        alert("Erro ao salvar o Top 10")
-      }
-    }
-    saveTop10()
   }
 
   const isMaxReached = selectedProducts.length >= 10
@@ -179,35 +191,55 @@ export default function ProductManager() {
               </DialogContent>
             </Dialog>
             
-            {/* ✅ PONTO 5: BOTÃO SALVAR COM LÓGICA DE HABILITAÇÃO */}
+            {/* ✅ PONTO 5: BOTÃO SALVAR COM LÓGICA DE HABILITAÇÃO E ESTADOS VISUAIS */}
             <Button
               onClick={handleSave}
               className={`text-white px-8 py-2 text-lg font-semibold mt-auto mb-auto transition-colors ${
-                !hasChanges ? "bg-gray-500 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
+                (!hasChanges || isLoading) ? "bg-gray-500 cursor-not-allowed" : 
+                isSaved ? "bg-green-600 hover:bg-green-700" : 
+                "bg-orange-500 hover:bg-orange-600"
               }`}
-              disabled={!hasChanges || selectedProducts.length === 0}
+              disabled={!hasChanges || selectedProducts.length === 0 || isLoading}
             >
-              Salvar
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
+                  Salvando...
+                </>
+              ) : isSaved ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Salvo!
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {hasChanges ? "Salvar Alterações" : "Sem Alterações"}
+                </>
+              )}
             </Button>
           </div>
 
           {selectedProducts.length === 0 ? (
             <div className="text-stone-400 text-center py-8">Nenhum produto no Top 10</div>
           ) : (
-            <div className="space-y-2" onDragLeave={() => setDragOverIndex(null)}>
+            <Reorder.Group axis="y" values={selectedProducts} onReorder={setSelectedProducts}>
               {selectedProducts.map((product, index) => (
-                <React.Fragment key={product.id}>
-                  {dragOverIndex === index && draggedIndex !== index && (
-                    <div className="h-12 bg-orange-500/20 rounded-lg border-2 border-dashed border-orange-500 transition-all" />
-                  )}
-                  <div
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragEnter={(e) => handleDragEnter(e, index)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`flex items-center justify-between p-3 bg-stone-700 rounded-lg cursor-move transition-all duration-200 ${draggedIndex === index ? "opacity-50 scale-95 shadow-lg" : "hover:bg-stone-600"}`}
+                <Reorder.Item key={product.id} value={product}>
+                  <motion.div
+                    className="flex items-center justify-between p-3 bg-stone-700 rounded-lg cursor-move transition-all duration-200 hover:bg-stone-600 mb-2"
+                    whileDrag={{ 
+                      scale: 1.02, 
+                      boxShadow: "0 8px 25px rgba(0,0,0,0.4)",
+                      zIndex: 10
+                    }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      delay: index * 0.05,
+                      duration: 0.3
+                    }}
+                    layout
                   >
                     <div className="flex items-center space-x-3">
                       <GripVertical className="w-5 h-5 text-stone-400" />
@@ -223,10 +255,7 @@ export default function ProductManager() {
                         {index + 1}
                       </div>
                       <Button
-                        onClick={() => {
-                          removeProduct(product.id)
-                          product.ranking_top = 0
-                        }}
+                        onClick={() => removeProduct(product.id)}
                         variant="ghost"
                         size="sm"
                         className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
@@ -234,20 +263,10 @@ export default function ProductManager() {
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
-                </React.Fragment>
+                  </motion.div>
+                </Reorder.Item>
               ))}
-              <div
-                className="h-4 -mt-2"
-                onDragEnter={(e) => handleDragEnter(e, selectedProducts.length)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, selectedProducts.length)}
-              >
-                {dragOverIndex === selectedProducts.length && (
-                  <div className="h-12 bg-orange-500/20 rounded-lg border-2 border-dashed border-orange-500 transition-all" />
-                )}
-              </div>
-            </div>
+            </Reorder.Group>
           )}
         </div>
       </div>

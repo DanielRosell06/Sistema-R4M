@@ -1,15 +1,17 @@
 "use client"
 
-import { useState } from "react"
-import { GripVertical } from "lucide-react"
-import { Card } from "../ui/card"
-import { useEffect } from "react"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
+import { motion, Reorder } from "framer-motion"
+import { GripVertical, User, Save, Check } from "lucide-react"
 
-export default function DraggableList() {
-    const [items, setItems] = useState([])
-    const [itemsInicial, setItemsInicial] = useState([])
-    const [loadingSave, setloadingSave] = useState(-1)
+export default function Component() {
+    const [names, setNames] = useState([])
+    const [initialOrder, setInitialOrder] = useState([])
+    const [hasChanges, setHasChanges] = useState(false)
+    const [isSaved, setIsSaved] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
         const fetchCategorias = async () => {
@@ -20,179 +22,166 @@ export default function DraggableList() {
                 }
                 let data = await res.json()
                 data = data.filter(item => item.titulo !== "Sem Categoria")
-                setItemsInicial(data)
-                setItems(data)
+
+                // Adicionar ranking inicial se não existir
+                const dataWithRanking = data.map((item, index) => ({
+                    ...item,
+                    ranking: item.ranking || index + 1,
+                }))
+
+                setNames(dataWithRanking)
+                setInitialOrder(dataWithRanking)
             } catch (err) {
                 console.error("Erro ao buscar categorias:", err)
-                // Opcional: mostrar mensagem de erro para o usuário
             }
         }
         fetchCategorias()
     }, [])
 
+    // Função para comparar se houve mudanças na ordem
+    const checkForChanges = (currentNames, originalOrder) => {
+        if (currentNames.length !== originalOrder.length) return true
+
+        return currentNames.some((item, index) => {
+            const originalItem = originalOrder[index]
+            return item.id !== originalItem.id
+        })
+    }
+
+    // Detectar mudanças quando a ordem dos nomes muda
+    useEffect(() => {
+        if (initialOrder.length > 0) {
+            const changesDetected = checkForChanges(names, initialOrder)
+            setHasChanges(changesDetected)
+
+            // Reset do estado "salvo" quando há mudanças
+            if (changesDetected) {
+                setIsSaved(false)
+            }
+        }
+    }, [names, initialOrder])
+
+    // Atualizar ranking quando a ordem muda
+    useEffect(() => {
+        if (names.length > 0) {
+            setNames((prevNames) =>
+                prevNames.map((person, index) => ({
+                    ...person,
+                    ranking: index + 1,
+                }))
+            )
+        }
+    }, [names.map((n) => n.id).join(",")])
+
     const fetchAtualizarCategorias = async () => {
+        if (!hasChanges) return
+
+        setIsLoading(true)
         try {
-            console.log(items)
             const res = await fetch("/api/inicio/categoria", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ categoriasNovas: items }),
+                body: JSON.stringify({ categoriasNovas: names }),
             })
-            setloadingSave(1)
-            fetchCategorias()
+
             if (!res.ok) {
                 throw new Error(`Erro HTTP: ${res.status}`)
             }
+
             let data = await res.json()
             data = data.filter(item => item.titulo !== "Sem Categoria")
-            setItems(data)
+
+            // Atualizar estados após sucesso
+            setInitialOrder(names) // Atualiza a ordem inicial com a nova ordem
+            setHasChanges(false)
+            setIsSaved(true)
+
+            // Reset do estado "salvo" após 3 segundos
+            setTimeout(() => {
+                setIsSaved(false)
+            }, 3000)
+
         } catch (err) {
-            console.error("Erro ao buscar categorias:", err)
+            console.error("Erro ao atualizar categorias:", err)
             // Opcional: mostrar mensagem de erro para o usuário
+        } finally {
+            setIsLoading(false)
         }
-    }
-
-    const [draggedItem, setDraggedItem] = useState(null)
-    const [dragOverIndex, setDragOverIndex] = useState(null)
-
-    // Função para calcular como a lista ficará durante o drag
-    const getReorganizedItems = () => {
-        if (!draggedItem || dragOverIndex === null) {
-            return items
-        }
-
-        const dragIndex = items.findIndex((item) => item.id === draggedItem.id)
-        const newItems = [...items]
-
-        // Remove o item sendo arrastado
-        const [removed] = newItems.splice(dragIndex, 1)
-
-        // Insere na nova posição
-        newItems.splice(dragOverIndex, 0, removed)
-
-        // Atualiza os rankings
-        return newItems.map((item, index) => ({
-            ...item,
-            ranking: index + 1,
-        }))
-    }
-
-    const displayItems = draggedItem ? getReorganizedItems() : items
-
-    const handleDragStart = (e, item) => {
-        setDraggedItem(item)
-        e.dataTransfer.effectAllowed = "move"
-        e.dataTransfer.setData("text/html", "")
-    }
-
-    const handleDragOver = (e, index) => {
-        e.preventDefault()
-        e.dataTransfer.dropEffect = "move"
-
-        if (draggedItem) {
-            setDragOverIndex(index)
-        }
-    }
-
-    const handleDragEnter = (e, index) => {
-        e.preventDefault()
-        if (draggedItem) {
-            setDragOverIndex(index)
-        }
-    }
-
-    const handleDrop = (e) => {
-        e.preventDefault()
-
-        if (!draggedItem || dragOverIndex === null) return
-
-        // Aplica a reorganização final
-        const finalItems = getReorganizedItems()
-        setItems(finalItems)
-
-        // Reset states
-        setDraggedItem(null)
-        setDragOverIndex(null)
-    }
-
-    const handleDragEnd = () => {
-        setDraggedItem(null)
-        setDragOverIndex(null)
     }
 
     return (
-        <div className="w-full mx-auto p-6">
-            <h1 className="text-3xl font-bold text-center mb-8 text-white">Lista Ordenável</h1>
-            <p className="text-gray-400 text-center mb-6">
-                Arraste os itens usando o ícone à esquerda para reordenar a lista
-            </p>
-
-            <div className="flex">
-                <Button
-                    className={(itemsInicial == items ? "bg-stone-600 text-stone-400" : "bg-orange-500 text-white hover:bg-orange-600")}
-                    onClick={() => { 
-                        fetchAtualizarCategorias() 
-                        setloadingSave(0)
-                    }}
-                >
-                    Salvar
-                </Button>
-                {
-                    loadingSave === 0 ? <h1 className="mt-auto mb-auto ml-4">Salvando Alterações...</h1> : 
-                    loadingSave === 1 ? <h1 className="mt-auto mb-auto ml-4">Alterções Salvas!</h1> : ""
-                }
-            </div>
-
-            <div className="space-y-2 mt-4">
-                {displayItems.map((item, index) => {
-                    const isDragging = draggedItem?.id === item.id
-                    const isDropZone = dragOverIndex === index && draggedItem?.id !== item.id
-
-                    return (
-                        <div key={item.id}>
-                            {/* Placeholder para mostrar onde o item será inserido */}
-                            {isDropZone && (
-                                <div className="h-16 border-2 border-dashed border-orange-500 bg-orange-500/10 rounded-lg mb-2 flex items-center justify-center">
-                                    <span className="text-orange-500 text-sm font-medium">Solte aqui (Ranking {item.ranking})</span>
-                                </div>
-                            )}
-
-                            <Card
-                                className={`
-                  p-4 transition-all duration-200 cursor-move bg-stone-800 border-stone-800 hover:border-orange-500/50
-                  ${isDragging ? "opacity-30 scale-95 rotate-2 shadow-lg shadow-orange-500/20" : ""}
-                  ${isDropZone ? "transform translate-y-2" : ""}
-                `}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, item)}
-                                onDragOver={(e) => handleDragOver(e, index)}
-                                onDragEnter={(e) => handleDragEnter(e, index)}
-                                onDrop={handleDrop}
-                                onDragEnd={handleDragEnd}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="cursor-grab active:cursor-grabbing">
-                                        <GripVertical className="h-5 w-5 text-gray-400 hover:text-orange-500 transition-colors" />
-                                    </div>
-
-                                    <div className="flex-1 flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-medium text-white">{item.titulo}</h3>
-                                        </div>
-
-                                        <div className="text-right">
-                                            <p className="text-xs text-gray-400 mt-1">Posição {item.ranking}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
+        <div className="bg-stone-900 p-6">
+            <div className="max-w-md mx-auto">
+                <div className="bg-stone-800 rounded-lg p-4">
+                    <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <h2 className="text-white text-lg font-semibold">Organizar Categorias</h2>
                         </div>
-                    )
-                })}
-            </div>
+                        <p className="text-stone-400 text-sm">Arraste e solte para reordenar as categorias conforme sua preferência</p>
 
+                        <div className="pt-4">
+                            <Button
+                                onClick={fetchAtualizarCategorias}
+                                disabled={!hasChanges || isLoading}
+                                className={`w-full text-white px-4 py-2 font-semibold transition-colors ${(!hasChanges || isLoading) ? "bg-gray-500 cursor-not-allowed" :
+                                        isSaved ? "bg-green-600 hover:bg-green-700" :
+                                            "bg-orange-500 hover:bg-orange-600"
+                                    }`}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
+                                        Salvando...
+                                    </>
+                                ) : isSaved ? (
+                                    <>
+                                        <Check className="w-4 h-4 mr-2" />
+                                        Salvo!
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-4 h-4 mr-2" />
+                                        {hasChanges ? "Salvar Alterações" : "Sem Alterações"}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Reorder.Group axis="y" values={names} onReorder={setNames}>
+                            {names.map((person, index) => (
+                                <Reorder.Item key={person.id} value={person}>
+                                    <motion.div
+                                        className="mb-2 flex items-center gap-3 p-3 bg-stone-700 rounded-lg cursor-move transition-all duration-200 hover:bg-stone-600"
+                                        whileDrag={{
+                                            scale: 1.02,
+                                            boxShadow: "0 8px 25px rgba(0,0,0,0.4)",
+                                            zIndex: 10
+                                        }}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{
+                                            delay: index * 0.05,
+                                            duration: 0.3
+                                        }}
+                                        layout
+                                    >
+                                        <GripVertical className="w-4 h-4 text-stone-400" />
+                                        <div className="flex items-center gap-2 flex-1">
+                                            <span className="font-medium text-white">{person.titulo}</span>
+                                        </div>
+                                        <h1 className="text-sm">Posição #{person.ranking}</h1>
+                                    </motion.div>
+                                </Reorder.Item>
+                            ))}
+                        </Reorder.Group>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
+
