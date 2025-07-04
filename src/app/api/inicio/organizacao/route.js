@@ -30,7 +30,6 @@ export async function PUT(request) {
         where: { id: p.id },
         data: {
           id_Categoria: p.id_Categoria,
-          ranking_top: p.ranking_top,
           ranking_categoria: p.ranking_categoria, // CORREÇÃO: Adicionado para salvar a ordem
         },
       })

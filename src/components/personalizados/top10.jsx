@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react" // Importei o useEffect
+import React, { useState, useEffect } from "react"
 import { Plus, GripVertical, X } from "lucide-react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
@@ -8,6 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 export default function ProductManager() {
   const [availableProducts, setAvailableProducts] = useState([])
   const [selectedProducts, setSelectedProducts] = useState([])
+  const [initialProducts, setInitialProducts] = useState([]) // Guarda a lista original
+  const [hasChanges, setHasChanges] = useState(false) // Controla se há mudanças
+
   const [flag, setFlag] = useState(false)
 
   useEffect(() => {
@@ -19,11 +22,13 @@ export default function ProductManager() {
 
   useEffect(() => {
     if (flag) {
-      console.log(availableProducts)
       const initiallySelected = availableProducts
         .filter((product) => product.ranking_top >= 1)
         .sort((a, b) => a.ranking_top - b.ranking_top)
+      
       setSelectedProducts(initiallySelected)
+      // ✅ PONTO 2: DEFINE O ESTADO INICIAL QUANDO OS DADOS SÃO CARREGADOS
+      setInitialProducts(initiallySelected) 
     }
     setFlag(true)
   }, [availableProducts])
@@ -32,20 +37,29 @@ export default function ProductManager() {
   const [draggedIndex, setDraggedIndex] = useState(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
 
-  // ✅ PONTO 1: EFEITO PARA ATUALIZAR O RANKING
-  // Este useEffect é acionado sempre que a lista `selectedProducts` muda.
   useEffect(() => {
-    // Mapeamos a lista para criar uma nova com a propriedade `ranking_top` atualizada.
     const updatedProducts = selectedProducts.map((product, index) => ({
       ...product,
-      ranking_top: index + 1, // A posição é o índice do array + 1
+      ranking_top: index + 1,
     }))
-
-    // Verificamos se há necessidade de atualização para evitar loops infinitos de renderização.
     if (JSON.stringify(updatedProducts) !== JSON.stringify(selectedProducts)) {
       setSelectedProducts(updatedProducts)
     }
-  }, [selectedProducts]) // O array de dependência garante que o efeito rode apenas quando a lista mudar.
+  }, [selectedProducts])
+  
+  // ✅ PONTO 3: EFEITO QUE COMPARA O ESTADO ATUAL COM O INICIAL
+  useEffect(() => {
+    // Compara a ordem dos IDs da lista atual com a original
+    const currentOrder = JSON.stringify(selectedProducts.map(p => p.id));
+    const initialOrder = JSON.stringify(initialProducts.map(p => p.id));
+    
+    // Se for diferente, ativa o flag de mudanças
+    if (currentOrder !== initialOrder) {
+      setHasChanges(true);
+    } else {
+      setHasChanges(false);
+    }
+  }, [selectedProducts, initialProducts]);
 
   const addProduct = (product) => {
     if (selectedProducts.length < 10 && !selectedProducts.find((p) => p.id === product.id)) {
@@ -77,13 +91,10 @@ export default function ProductManager() {
   const handleDrop = (e, dropIndex) => {
     e.preventDefault()
     if (draggedIndex === null) return
-
     const newProducts = [...selectedProducts]
     const [draggedProduct] = newProducts.splice(draggedIndex, 1)
-
     newProducts.splice(dropIndex, 0, draggedProduct)
-
-    setSelectedProducts(newProducts) // A atualização do estado aqui acionará o useEffect do ranking
+    setSelectedProducts(newProducts)
     setDraggedIndex(null)
     setDragOverIndex(null)
   }
@@ -94,7 +105,6 @@ export default function ProductManager() {
   }
 
   const handleSave = () => {
-    console.log(selectedProducts)
     const saveTop10 = async () => {
       try {
         const body = JSON.stringify([
@@ -105,14 +115,16 @@ export default function ProductManager() {
         ])
         const res = await fetch("/api/inicio/produto_top_10", {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body,
         })
         if (!res.ok) throw new Error("Erro ao salvar o Top 10")
         await res.json()
         
+        // ✅ PONTO 4: APÓS SALVAR, ATUALIZA O ESTADO INICIAL
+        setInitialProducts(selectedProducts);
+        alert("Top 10 salvo com sucesso!");
+
       } catch (err) {
         alert("Erro ao salvar o Top 10")
       }
@@ -125,60 +137,58 @@ export default function ProductManager() {
   return (
     <div className="min-h-screen bg-stone-900 p-6">
       <div className="max-w-2xl mx-auto">
-        {/* Botão de adicionar (sem alterações) */}
-        <div className="mb-6">
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger asChild>
-              <Button
-                disabled={isMaxReached}
-                className={`w-12 h-12 rounded-full ${isMaxReached ? "bg-gray-500 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
-                  } text-white font-bold text-xl`}
-              >
-                <Plus className="w-6 h-6" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-stone-800 border-stone-700 text-white max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-white">Adicionar Produtos</DialogTitle>
-              </DialogHeader>
-              <div className="max-h-96 overflow-y-auto">
-                <div className="space-y-3">
-                  {availableProducts
-                    .filter((product) => !selectedProducts.find((p) => p.id === product.id))
-                    .map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-3 bg-stone-700 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          {product.imagem == "" ?
-                            <div className="w-10 h-10 rounded object-cover bg-stone-600">
-                            </div>
-                            :
-                            <img
-                              src={product.imagem}
-                              alt={product.titulo}
-                              className="w-10 h-10 rounded object-cover"
-                            />
-                          }
-                          <span className="text-white">{product.titulo}</span>
-                        </div>
-                        <Button
-                          onClick={() => addProduct(product)}
-                          className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 ml-3"
-                          disabled={isMaxReached}
-                        >
-                          Adicionar +
-                        </Button>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Lista de produtos selecionados */}
         <div className="bg-stone-800 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-white text-lg font-semibold">⭐ Top 10 ({selectedProducts.length}/10)</h2>
+          </div>
+          <div className="justify-between flex mb-4">
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  disabled={isMaxReached}
+                  className={` w-10 h-10 rounded-full ${isMaxReached ? "bg-gray-500 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"} text-white font-bold text-xl`}
+                >
+                  <Plus className="w-6 h-6" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-stone-800 border-stone-700 text-white max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Adicionar Produtos</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-96 overflow-y-auto">
+                  <div className="space-y-3">
+                    {availableProducts
+                      .filter((product) => !selectedProducts.find((p) => p.id === product.id))
+                      .map((product) => (
+                        <div key={product.id} className="flex items-center justify-between p-3 bg-stone-700 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {product.imagem === "" ?
+                              <div className="w-10 h-10 rounded object-cover bg-stone-600"></div>
+                              :
+                              <img src={product.imagem} alt={product.titulo} className="w-10 h-10 rounded object-cover"/>
+                            }
+                            <span className="text-white">{product.titulo}</span>
+                          </div>
+                          <Button onClick={() => addProduct(product)} className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 ml-3" disabled={isMaxReached}>
+                            Adicionar +
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            {/* ✅ PONTO 5: BOTÃO SALVAR COM LÓGICA DE HABILITAÇÃO */}
+            <Button
+              onClick={handleSave}
+              className={`text-white px-8 py-2 text-lg font-semibold mt-auto mb-auto transition-colors ${
+                !hasChanges ? "bg-gray-500 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
+              }`}
+              disabled={!hasChanges || selectedProducts.length === 0}
+            >
+              Salvar
+            </Button>
           </div>
 
           {selectedProducts.length === 0 ? (
@@ -190,7 +200,6 @@ export default function ProductManager() {
                   {dragOverIndex === index && draggedIndex !== index && (
                     <div className="h-12 bg-orange-500/20 rounded-lg border-2 border-dashed border-orange-500 transition-all" />
                   )}
-
                   <div
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
@@ -198,32 +207,21 @@ export default function ProductManager() {
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`flex items-center justify-between p-3 bg-stone-700 rounded-lg cursor-move transition-all duration-200 ${draggedIndex === index ? "opacity-50 scale-95 shadow-lg" : "hover:bg-stone-600"
-                      }`}
+                    className={`flex items-center justify-between p-3 bg-stone-700 rounded-lg cursor-move transition-all duration-200 ${draggedIndex === index ? "opacity-50 scale-95 shadow-lg" : "hover:bg-stone-600"}`}
                   >
                     <div className="flex items-center space-x-3">
                       <GripVertical className="w-5 h-5 text-stone-400" />
-                      {product.imagem == "" ?
-                        <div className="w-12 h-12 rounded object-cover bg-stone-600">
-                        </div>
+                      {product.imagem === "" ?
+                        <div className="w-12 h-12 rounded object-cover bg-stone-600"></div>
                         :
-                        <img
-                          src={product.imagem}
-                          alt={product.titulo}
-                          className="w-12 h-12 rounded object-cover"
-                        />
+                        <img src={product.imagem} alt={product.titulo} className="w-12 h-12 rounded object-cover"/>
                       }
                       <span className="text-white">{product.titulo}</span>
                     </div>
-
-                    {/* ✅ PONTO 2: ELEMENTO DO RANKING E BOTÃO DE REMOVER */}
                     <div className="flex items-center space-x-4">
-                      {/* Bolinha laranja com a posição do ranking */}
                       <div className="ml-3 flex items-center justify-center w-6 h-6 bg-orange-500 rounded-full text-sm font-bold text-white">
                         {index + 1}
                       </div>
-
-                      {/* Botão de remover */}
                       <Button
                         onClick={() => {
                           removeProduct(product.id)
@@ -236,11 +234,9 @@ export default function ProductManager() {
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
-
                   </div>
                 </React.Fragment>
               ))}
-
               <div
                 className="h-4 -mt-2"
                 onDragEnter={(e) => handleDragEnter(e, selectedProducts.length)}
@@ -253,17 +249,6 @@ export default function ProductManager() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Botão de salvar (sem alterações) */}
-        <div className="flex justify-center">
-          <Button
-            onClick={handleSave}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2 text-lg font-semibold"
-            disabled={selectedProducts.length === 0}
-          >
-            Salvar
-          </Button>
         </div>
       </div>
     </div>
