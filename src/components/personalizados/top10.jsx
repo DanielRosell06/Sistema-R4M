@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Plus, GripVertical, X, Save, Check } from "lucide-react"
+import { Plus, GripVertical, X, Save, Check, Search } from "lucide-react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+import { Input } from "../ui/input"
 import { motion, Reorder } from "framer-motion"
 
 export default function ProductManager() {
@@ -14,6 +15,7 @@ export default function ProductManager() {
   const [isSaved, setIsSaved] = useState(false) // Controla estado "Salvo"
   const [isLoading, setIsLoading] = useState(false) // Controla estado "Salvando"
   const [flag, setFlag] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("") // Estado para o termo de pesquisa
 
   useEffect(() => {
     fetch("/api/inicio/produto")
@@ -73,6 +75,20 @@ export default function ProductManager() {
       )
     }
   }, [selectedProducts.map(p => p.id).join(',')])
+
+  // Função para filtrar produtos baseado no termo de pesquisa
+  const filteredProducts = availableProducts
+    .filter((product) => !selectedProducts.find((p) => p.id === product.id))
+    .filter((product) => 
+      product.titulo.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+  // Limpa o termo de pesquisa quando o modal é fechado
+  useEffect(() => {
+    if (!isModalOpen) {
+      setSearchTerm("")
+    }
+  }, [isModalOpen])
 
   const addProduct = (product) => {
     if (selectedProducts.length < 10 && !selectedProducts.find((p) => p.id === product.id)) {
@@ -167,11 +183,27 @@ export default function ProductManager() {
                 <DialogHeader>
                   <DialogTitle className="text-white">Adicionar Produtos</DialogTitle>
                 </DialogHeader>
+                
+                {/* Campo de pesquisa */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4" />
+                  <Input
+                    type="text"
+                    placeholder="Pesquisar produtos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-stone-700 border-stone-600 text-white placeholder-stone-400 focus:border-orange-500 focus:ring-orange-500"
+                  />
+                </div>
+
                 <div className="max-h-96 overflow-y-auto">
                   <div className="space-y-3">
-                    {availableProducts
-                      .filter((product) => !selectedProducts.find((p) => p.id === product.id))
-                      .map((product) => (
+                    {filteredProducts.length === 0 ? (
+                      <div className="text-stone-400 text-center py-4">
+                        {searchTerm ? "Nenhum produto encontrado" : "Todos os produtos já foram adicionados"}
+                      </div>
+                    ) : (
+                      filteredProducts.map((product) => (
                         <div key={product.id} className="flex items-center justify-between p-3 bg-stone-700 rounded-lg">
                           <div className="flex items-center space-x-3">
                             {product.imagem === "" ?
@@ -185,7 +217,8 @@ export default function ProductManager() {
                             Adicionar +
                           </Button>
                         </div>
-                      ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </DialogContent>
