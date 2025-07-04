@@ -1,4 +1,4 @@
-// File: src/app/api/organizacao/route.js
+// File: src/app/api/inicio/organizacao/route.js
 
 import { prisma } from '../../../../lib/prisma';
 import { NextResponse } from 'next/server';
@@ -31,6 +31,7 @@ export async function PUT(request) {
         data: {
           id_Categoria: p.id_Categoria,
           ranking_top: p.ranking_top,
+          ranking_categoria: p.ranking_categoria, // CORREÇÃO: Adicionado para salvar a ordem
         },
       })
     );

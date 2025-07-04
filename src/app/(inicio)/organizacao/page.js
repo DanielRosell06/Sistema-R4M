@@ -1,5 +1,3 @@
-// File: src/app/(inicio)/organizacao/page.js
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -15,8 +13,7 @@ import {
 import {
   SortableContext,
   useSortable,
-  arrayMove,
-  verticalListSortingStrategy
+  arrayMove
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Skeleton } from "../../../components/ui/skeleton";
@@ -65,7 +62,7 @@ function CategoryColumn({ id, title, products, onDelete }) {
   return (
     <div className="bg-stone-800 rounded-lg p-4 w-[47%] flex-shrink-0 flex flex-col h-[400px]">
       <div className="flex justify-between items-center mb-4">
-        <h3 className={(title == "Sem Categoria" ? "text-stone-400 italic" : "text-orange-400") + " font-bold text-lg "}>{title}</h3>
+        <h3 className={(title === "Sem Categoria" ? "text-stone-400 italic" : "text-orange-400") + " font-bold text-lg"}>{title}</h3>
         {title !== 'Sem Categoria' && (
           <Button
             variant="ghost"
@@ -79,11 +76,11 @@ function CategoryColumn({ id, title, products, onDelete }) {
           </Button>
         )}
       </div>
-      <SortableContext id={id.toString()} items={validProducts.map(p => p.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext id={id.toString()} items={validProducts.map(p => p.id)}>
+        {/* CORREÇÃO: Adicionado overflow-y-auto para o scroll */}
         <div
           ref={setDroppableRef}
-          className={`flex-grow bg-stone-900/50 p-2 rounded-md min-h-[100px] space-y-2 ${isOver ? 'ring-2 ring-offset-2 ring-orange-500' : ''
-            }`}
+          className={`flex-grow bg-stone-900/50 p-2 rounded-md min-h-[100px] space-y-2 overflow-y-auto ${isOver ? 'ring-2 ring-offset-2 ring-orange-500' : ''}`}
         >
           {validProducts.map(p => (
             <ProductItem key={p.id} product={p} />
@@ -107,10 +104,15 @@ export default function OrganizacaoPage() {
   const [activeProduct, setActiveProduct] = useState(null);
   const [loadData, setLoadData] = useState(-1);
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(useSensor(PointerSensor, {
+    activationConstraint: {
+        distance: 8,
+    },
+  }));
 
   useEffect(() => {
     async function fetchData() {
+      setLoading(true);
       try {
         const [productsRes, categoriesRes] = await Promise.all([
           fetch('/api/inicio/organizacao'),
@@ -119,20 +121,25 @@ export default function OrganizacaoPage() {
         const products = await productsRes.json();
         const categories = await categoriesRes.json();
 
-        // Inicializa apenas com as categorias do banco
         const newColumns = {};
         categories.forEach(cat => {
           newColumns[cat.id] = { title: cat.titulo, products: [] };
         });
 
         products.forEach(p => {
-          if (!p || !p.id) return;
-          if (p.id_Categoria && newColumns[p.id_Categoria]) {
-            newColumns[p.id_Categoria].products.push(p);
-          }
+            if (!p || !p.id) return;
+            // MELHORIA: Garante que o produto vá para 'Sem Categoria' se sua categoria não existir
+            const categoryId = p.id_Categoria && newColumns[p.id_Categoria] ? p.id_Categoria : 1;
+            if (newColumns[categoryId]) {
+                newColumns[categoryId].products.push(p);
+            }
         });
 
-        // Ordena as colunas para que a de ID 1 fique em primeiro
+        // Ordena os produtos dentro de cada categoria pelo ranking
+        Object.values(newColumns).forEach(col => {
+            col.products.sort((a, b) => a.ranking_categoria - b.ranking_categoria);
+        });
+
         const orderedColumns = {};
         if (newColumns[1]) {
           orderedColumns[1] = newColumns[1];
@@ -170,57 +177,59 @@ export default function OrganizacaoPage() {
   function handleDragEnd(event) {
     const { active, over } = event;
     setActiveProduct(null);
-    if (!over) return;
 
-    const from = findContainer(active.id);
-    const to = findContainer(over.id) || over.id;
-    if (!from || !to) return;
+    if (!over || active.id === over.id) return;
 
-    setColumns(prev => {
-      const cols = { ...prev };
-      const source = [...cols[from].products];
-      const dest = from === to ? source : [...cols[to].products];
+    const fromContainerId = findContainer(active.id);
+    const toContainerId = findContainer(over.id) || over.id;
 
-      const idxFrom = source.findIndex(p => p.id === active.id);
-      const idxTo = dest.findIndex(p => p.id === over.id);
-      const toIndex = idxTo < 0 ? dest.length : idxTo;
-      if (idxFrom < 0) return prev;
+    if (!fromContainerId || !toContainerId) return;
 
-      const [moved] = source.splice(idxFrom, 1);
-      dest.splice(toIndex, 0, moved);
+    setColumns((prev) => {
+        const newCols = JSON.parse(JSON.stringify(prev));
+        const sourceProducts = newCols[fromContainerId].products;
+        const activeProductIndex = sourceProducts.findIndex(p => p.id === active.id);
+        
+        if (activeProductIndex === -1) return prev;
 
-      cols[from].products = from === to ? dest : source;
-      cols[to].products = dest;
-      return cols;
+        const [movedItem] = sourceProducts.splice(activeProductIndex, 1);
+        const destProducts = newCols[toContainerId].products;
+        let overProductIndex;
+        
+        if(over.id in newCols){
+            // Dropping on container
+            overProductIndex = destProducts.length;
+        } else {
+            // Dropping on item
+            overProductIndex = destProducts.findIndex(p => p.id === over.id);
+        }
+
+        destProducts.splice(overProductIndex >= 0 ? overProductIndex : destProducts.length, 0, movedItem);
+        
+        return newCols;
     });
   }
 
   async function handleCreateCategory() {
     if (!newCategoryName.trim()) return;
     try {
-      const res = await fetch('/api/inicio/categoria', {
+      await fetch('/api/inicio/categoria', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ titulo: newCategoryName }),
       });
-      setLoadData(loadData * -1)
       setNewCategoryName("");
+      setLoadData(Date.now()); // Força o reload dos dados
     } catch {
       alert("Erro ao criar categoria");
     }
   }
 
   async function handleDeleteCategory(id) {
-    if (!confirm("Tem certeza que deseja excluir esta categoria?")) return;
+    if (!confirm("Tem certeza que deseja excluir esta categoria? Os produtos serão movidos para 'Sem Categoria'.")) return;
     try {
-      const res = await fetch(`/api/inicio/categoria/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      setColumns(prev => {
-        const cols = { ...prev };
-        cols['sem-categoria'].products.push(...cols[id].products);
-        delete cols[id];
-        return cols;
-      });
+      await fetch(`/api/inicio/categoria/${id}`, { method: 'DELETE' });
+      setLoadData(Date.now()); // Força o reload dos dados
     } catch {
       alert("Erro ao excluir categoria.");
     }
@@ -230,26 +239,31 @@ export default function OrganizacaoPage() {
     const toUpdate = [];
     Object.entries(columns).forEach(([colId, col]) => {
       col.products.forEach((p, i) => {
+        // CORREÇÃO: Adicionado ranking_categoria para salvar a ordem
         toUpdate.push({
           id: p.id,
-          id_Categoria: ['sem-categoria', 'top-10'].includes(colId) ? null : Number(colId),
-          ranking_top: colId === 'top-10' ? i + 1 : 0,
+          id_Categoria: Number(colId),
+          ranking_top: 0, // Resetar ranking_top, já que esta tela não é para isso
+          ranking_categoria: i + 1, // Salva a ordem na categoria
         });
       });
     });
+
     try {
       const res = await fetch('/api/inicio/organizacao', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productsToUpdate: toUpdate }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("Falha ao salvar");
       alert("Organização salva com sucesso!");
     } catch {
       alert("Erro ao salvar alterações.");
     }
   }
 
+  // O restante do componente (JSX de loading e da página) permanece o mesmo...
+  // (O código foi omitido por brevidade, mas você deve mantê-lo como estava)
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-900 text-gray-100 p-8">
@@ -260,12 +274,10 @@ export default function OrganizacaoPage() {
           </div>
           <Skeleton className="h-10 w-36 bg-orange-500/50" />
         </div>
-
         <div className="mb-8 p-4 bg-stone-800 rounded-lg flex gap-4 items-center">
           <Skeleton className="h-10 flex-grow bg-stone-700" />
           <Skeleton className="h-10 w-36 bg-stone-700" />
         </div>
-
         <div className="flex gap-4 overflow-x-auto pb-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-stone-800 rounded-lg p-4 w-full md:w-80 flex-shrink-0 flex flex-col min-h-[400px]">
@@ -302,7 +314,7 @@ export default function OrganizacaoPage() {
                 onChange={e => setNewCategoryName(e.target.value)}
                 className="bg-stone-700 border-stone-600"
               />
-              <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => { handleCreateCategory() }}>Criar Categoria</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={handleCreateCategory}>Criar Categoria</Button>
             </div>
             <Button
               className="ml-[4%] w-[16%] mt-auto mb-auto bg-orange-500 hover:bg-orange-600"
@@ -326,7 +338,7 @@ export default function OrganizacaoPage() {
         </div>
         <div className='flex flex-col w-[45%]'>
           <DraggableList />
-          <ProductManager></ProductManager>
+          <ProductManager />
         </div>
       </div>
     </div>
