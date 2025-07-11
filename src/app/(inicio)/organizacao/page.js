@@ -266,7 +266,7 @@ export default function OrganizacaoPage() {
   // (O código foi omitido por brevidade, mas você deve mantê-lo como estava)
   if (loading) {
     return (
-      <div className="flex-1 space-y-8 p-8 pt-6 bg-stone-900 text-stone-300">
+      <div className=" h-[100vh] flex-1 space-y-8 p-8 pt-6 bg-stone-900 text-stone-300">
         {/* Cabeçalho Principal */}
         <div className="flex items-center justify-between space-y-2">
           <div>
