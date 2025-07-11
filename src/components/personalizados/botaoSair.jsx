@@ -1,25 +1,37 @@
-// File: src/components/personalizados/botaoSair.jsx
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Cookies from "js-cookie";
 
 const BotaoSair = () => {
-
-  const [userData, setUserData] = useState(Cookies.get("user"))
-
+  const [userName, setUserName] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    // Tratamento seguro do cookie
+    try {
+      const userCookie = Cookies.get("user");
+      if (userCookie) {
+        const userData = JSON.parse(userCookie);
+        setUserName(userData.nome || "");
+      }
+    } catch (e) {
+      console.error("Erro ao analisar cookie do usuário:", e);
+    }
+  }, []);
+
   const handleLogout = () => {
-    // Remove o cookie
-    document.cookie = "token=; user=; Max-Age=0; path=/";
-    // Redireciona
+    // Remoção adequada dos cookies
+    Cookies.remove("token");
+    Cookies.remove("user");
+    // Redirecionamento
     router.push('/login');
   };
 
   return (
     <div>
-      Olá {JSON.parse(userData).nome}
+      Olá {userName}
       <button
         type="button"
         onClick={handleLogout}
@@ -33,4 +45,4 @@ const BotaoSair = () => {
   );
 };
 
-export default BotaoSair; // Exportação padrão corrigida
+export default BotaoSair;

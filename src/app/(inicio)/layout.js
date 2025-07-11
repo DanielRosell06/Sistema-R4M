@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./../globals.css";
 import Link from 'next/link';
 import BotaoSair from "./../../components/personalizados/botaoSair";
+import NavBarLinks from "./../../components/personalizados/navBar";
 
 export const metadata = {
   title: "Create Next App",
@@ -20,7 +21,7 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
-export default function RootLayout({ children }) {  
+export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.className} ${geistMono.className}`}>
       <body className="antialiased">
@@ -28,26 +29,7 @@ export default function RootLayout({ children }) {
           <div>
             <h1 className='text-xl font-bold'>R4M<span className='ml-1 text-orange-400'>Polidores</span></h1>
           </div>
-          <div>
-            <Link
-              href="/produtos"
-              className="mr-6 transition-colors hover:text-orange-400"
-            >
-              Produtos
-            </Link>
-            <a
-              href="/organizacao"
-              className="mr-6 transition-colors hover:text-orange-400"
-            >
-              Organização
-            </a>
-            <a
-              href="/admin"
-              className="transition-colors hover:text-orange-400"
-            >
-              Administração
-            </a>
-          </div>
+          <NavBarLinks></NavBarLinks>
           <div>
             <BotaoSair />
           </div>
