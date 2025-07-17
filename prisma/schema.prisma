@@ -18,6 +18,7 @@ model Categoria {
 model Produto {
   id                Int       @id @default(autoincrement())
   titulo            String
+  subTitulo         String    @default("")
   descricao         Json
   modo_de_uso       String
   id_Categoria      Int

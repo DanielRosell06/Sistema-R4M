@@ -7,6 +7,7 @@ import { useState } from 'react';
 import Modal from "../../../components/personalizados/modal"
 import { data } from 'autoprefixer';
 import { Skeleton } from "../../..//components/ui/skeleton"
+import { ScrollArea } from "../../../components/ui/scroll-area"
 
 export default function ProdutosPage() {
 
@@ -89,6 +90,7 @@ export default function ProdutosPage() {
     // CRIANDO PRODUTOS
     const [usoFields, setUsoFields] = useState([""])
     const [titulo, setTitulo] = useState("");
+    const [subtitulo, setSubtitulo] = useState("");
     const [modoUso, setModoUso] = useState("");
     const [imagemProduto, setImagemProduto] = useState("");
 
@@ -99,6 +101,7 @@ export default function ProdutosPage() {
 
             // Adiciona os campos ao FormData
             formData.append('titulo', titulo);
+            formData.append('subtitulo', subtitulo);
 
             // Para campos array (descricao), adiciona cada item separadamente
             usoFields.forEach((field, index) => {
@@ -121,6 +124,7 @@ export default function ProdutosPage() {
             if (res.ok) {
                 setCreateModal(false);
                 setTitulo("");
+                setSubtitulo("")
                 setModoUso("");
                 setUsoFields([""]);
 
@@ -148,6 +152,7 @@ export default function ProdutosPage() {
             // Adiciona os campos ao FormData
             formData.append('id', idEditar);
             formData.append('titulo', titulo);
+            formData.append('subtitulo', subtitulo);
 
             // Para campos array (descricao), adiciona cada item separadamente
             usoFields.forEach((field, index) => {
@@ -172,6 +177,7 @@ export default function ProdutosPage() {
             if (res.ok) {
                 setEditModal(false);
                 setTitulo("");
+                setSubtitulo("")
                 setModoUso("");
                 setUsoFields([""]);
                 setImagemProduto("");
@@ -242,6 +248,7 @@ export default function ProdutosPage() {
                                     setIdEditar(produto.id)
                                     setUsoFields(produto.descricao)
                                     setTitulo(produto.titulo)
+                                    setSubtitulo(produto.subTitulo)
                                     setModoUso(produto.modo_de_uso)
                                     setImagemProduto(produto.imagem)
                                     setEditModal(true)
@@ -259,62 +266,247 @@ export default function ProdutosPage() {
             {
                 createModal ?
                     <Modal titulo="Adicionar Produto">
-                        <form onSubmit={e => e.preventDefault()}>
+                        <ScrollArea className={"h-[70vh] w-full"}>
+                            <form className='w-[92%] ml-auto mr-auto' onSubmit={e => e.preventDefault()}>
+                                <div className="mb-4">
+                                    <label className="block mb-1 text-gray-200">Título</label>
+                                    <Input
+                                        type="text"
+                                        className="w-full"
+                                        placeholder="Nome do produto"
+                                        value={titulo}
+                                        onChange={e => setTitulo(e.target.value)}
+                                    />
+                                    <label className="mt-4 block mb-1 text-gray-200">Subtítulo</label>
+                                    <Input
+                                        type="text"
+                                        className="w-full"
+                                        placeholder="Subtítulo do produto"
+                                        value={subtitulo}
+                                        onChange={e => setSubtitulo(e.target.value)}
+                                    />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block mb-1 text-gray-200">Imagem</label>
+                                    <div className="relative">
+                                        <Input
+                                            className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
+                                            type="file"
+                                            id="file-input"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const fileName = e.target.files[0]?.name || "";
+                                                document.getElementById("remove-btn").style.display = fileName ? "block" : "none";
+                                                setImagemProduto(e.target.files[0]);
+                                            }}
+                                        />
+
+                                        <button
+                                            id="remove-btn"
+                                            onClick={() => {
+                                                event.preventDefault();
+                                                const fileInput = document.getElementById("file-input");
+                                                fileInput.value = "";
+                                                document.getElementById("remove-btn").style.display = "none";
+                                            }}
+                                            className=" mt-[10px] hidden absolute top-1 right-1 bg-red-500/0 text-red-500 rounded-md p-1 hover:bg-red-600 hover:text-white transition-colors mr-2"
+                                            aria-label="Remover arquivo"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block mb-1 text-gray-200">Modo de Uso</label>
+                                    <textarea
+                                        className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2"
+                                        rows={3}
+                                        placeholder="Modo de uso do produto"
+                                        value={modoUso}
+                                        onChange={e => setModoUso(e.target.value)}
+                                    ></textarea>
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block mb-1 text-gray-200 ">Especificações Técnicas</label>
+                                    {[...Array(usoFields?.length || 0)].map((_, i) => (
+                                        <div
+                                            className="flex flex-row justify-between"
+                                            key={i}>
+                                            <Input
+                                                type="text"
+                                                className="w-[88%] mb-2"
+                                                placeholder={`Especificação #${i + 1}`}
+                                                value={usoFields[i]}
+                                                onChange={e => {
+                                                    const updated = [...usoFields];
+                                                    updated[i] = e.target.value;
+                                                    setUsoFields(updated);
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="flex items-center justify-center text-red-400 hover:text-white hover:bg-red-400 transition-all rounded h-9 w-9"
+                                                onClick={() => {
+                                                    const updated = usoFields.filter((_, idx) => idx !== i);
+                                                    setUsoFields(updated);
+                                                }}
+                                                title="Remover especificação"
+                                            >
+                                                {/* Ícone de lixeira SVG */}
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm hover:cursor-pointer")}
+                                        disabled={usoFields.length >= 8}
+                                        onClick={() => {
+                                            if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
+                                        }}
+                                    >
+                                        + Adicionar epsecificação
+                                    </button>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+                                        onClick={() => {
+                                            setTitulo("");
+                                            setModoUso("");
+                                            setUsoFields([""]);
+                                            setImagemProduto("");
+                                            setCreateModal(false)
+                                        }}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
+                                        onClick={() => {
+                                            handleCreateProduto()
+                                        }}
+                                    >
+                                        Salvar
+                                    </button>
+                                </div>
+                            </form>
+                        </ScrollArea>
+                    </Modal>
+                    : ""
+            }
+            {
+                deleteModal &&
+                <Modal titulo="Excluir Produto">
+                    <div className="mb-6">
+                        <p className="text-lg text-gray-200">Tem certeza que deseja excluir este produto?</p>
+                        <p className="text-sm text-gray-400 mt-2">Esta ação não poderá ser desfeita.</p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+                            onClick={() => setDeleteModal(false)}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600"
+                            onClick={() => { handleDeleteProduto() }}
+                        >
+                            Excluir
+                        </button>
+                    </div>
+                </Modal>
+            }
+            {
+                editModal &&
+                <Modal titulo="Editar Produto">
+                    <ScrollArea className={"h-[70vh] w-full"}>
+                        <form className='w-[92%]'>
                             <div className="mb-4">
                                 <label className="block mb-1 text-gray-200">Título</label>
                                 <Input
-                                    type="text"
-                                    className="w-full"
-                                    placeholder="Nome do produto"
                                     value={titulo}
-                                    onChange={e => setTitulo(e.target.value)}
+                                    onChange={(e) => setTitulo(e.target.value)}
+                                    type="text" className="w-full" placeholder="Nome do produto"
+                                />
+                                <label className="mt-4 block mb-1 text-gray-200">Subtitulo</label>
+                                <Input
+                                    value={subtitulo}
+                                    onChange={(e) => setSubtitulo(e.target.value)}
+                                    type="text" className="w-full" placeholder="Subtitulo do produto"
                                 />
                             </div>
                             <div className="mb-4">
                                 <label className="block mb-1 text-gray-200">Imagem</label>
-                                <div className="relative">
-                                    <Input
-                                        className="h-[50px] file:mr-2 file:h-9 file:py-2 file:px-3 file:rounded-md file:border-0 hover:file:cursor-pointer file:text-sm file:font-medium file:bg-orange-400 file:text-white hover:file:bg-orange-600 cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors pr-9"
-                                        type="file"
-                                        id="file-input"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const fileName = e.target.files[0]?.name || "";
-                                            document.getElementById("remove-btn").style.display = fileName ? "block" : "none";
-                                            setImagemProduto(e.target.files[0]);
-                                        }}
-                                    />
-
-                                    <button
-                                        id="remove-btn"
-                                        onClick={() => {
-                                            event.preventDefault();
-                                            const fileInput = document.getElementById("file-input");
-                                            fileInput.value = "";
-                                            document.getElementById("remove-btn").style.display = "none";
-                                        }}
-                                        className=" mt-[10px] hidden absolute top-1 right-1 bg-red-500/0 text-red-500 rounded-md p-1 hover:bg-red-600 hover:text-white transition-colors mr-2"
-                                        aria-label="Remover arquivo"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    </button>
+                                <div className='flex'>
+                                    <div>
+                                        {imagemProduto != "" ?
+                                            typeof imagemProduto === "string" ?
+                                                <img className='h-32' src={imagemProduto}></img>
+                                                :
+                                                <div className=' border-2 p-2 rounded-sm h-full border-dashed border-gray-300'>
+                                                    <p className="text-sm text-white">Nova Imagem: {imagemProduto.name}</p>
+                                                </div>
+                                            :
+                                            <h1 className='text-sm text-stone-500'>O produto ainda não possui imagem</h1>
+                                        }
+                                    </div>
+                                    <div className="relative">
+                                        <label
+                                            htmlFor="edit-file-input"
+                                            className=" ml-4 p-4 flex items-center justify-center h-[50px] w-44 bg-orange-400 hover:bg-orange-600 text-white text-sm font-medium cursor-pointer rounded-md transition-colors"
+                                        >
+                                            Clique aqui para alterar a imagem
+                                            <input
+                                                type="file"
+                                                id="edit-file-input"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const fileName = e.target.files[0]?.name || "";
+                                                    setImagemProduto(e.target.files[0]);
+                                                }}
+                                            />
+                                        </label>
+                                        {imagemProduto != "" ?
+                                            <button
+                                                id="edit-remove-btn"
+                                                onClick={e => {
+                                                    e.preventDefault();
+                                                    const fileInput = document.getElementById("edit-file-input");
+                                                    fileInput.value = "";
+                                                    document.getElementById("edit-remove-btn").style.display = "none";
+                                                    setImagemProduto("")
+                                                }}
+                                                className="mt-4 ml-4 p-2 bg-gray-600 rounded-sm hover:bg-red-500 transition-all "
+                                                aria-label="Remover arquivo"
+                                            >
+                                                Remover Imagem
+                                            </button>
+                                            : ""
+                                        }
+                                    </div>
                                 </div>
                             </div>
                             <div className="mb-4">
                                 <label className="block mb-1 text-gray-200">Modo de Uso</label>
                                 <textarea
-                                    className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2"
-                                    rows={3}
-                                    placeholder="Modo de uso do produto"
                                     value={modoUso}
-                                    onChange={e => setModoUso(e.target.value)}
-                                ></textarea>
+                                    onChange={(e) => setModoUso(e.target.value)}
+                                    className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Modo de uso do produto"></textarea>
                             </div>
                             <div className="mb-4">
-                                <label className="block mb-1 text-gray-200 ">Especificações Técnicas</label>
+                                <label className="block mb-1 text-gray-200 ">Especificações</label>
                                 {[...Array(usoFields?.length || 0)].map((_, i) => (
                                     <div
                                         className="flex flex-row justify-between"
@@ -339,7 +531,6 @@ export default function ProdutosPage() {
                                             }}
                                             title="Remover especificação"
                                         >
-                                            {/* Ícone de lixeira SVG */}
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
                                             </svg>
@@ -354,7 +545,7 @@ export default function ProdutosPage() {
                                         if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
                                     }}
                                 >
-                                    + Adicionar epsecificação
+                                    + Adicionar especificação
                                 </button>
                             </div>
                             <div className="flex justify-end gap-2">
@@ -362,191 +553,25 @@ export default function ProdutosPage() {
                                     type="button"
                                     className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
                                     onClick={() => {
+                                        setEditModal(false)
                                         setTitulo("");
                                         setModoUso("");
                                         setUsoFields([""]);
                                         setImagemProduto("");
-                                        setCreateModal(false)
                                     }}
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={() => { handleEditProduto() }}
                                     className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
-                                    onClick={() => {
-                                        handleCreateProduto()
-                                    }}
                                 >
                                     Salvar
                                 </button>
                             </div>
                         </form>
-                    </Modal>
-                    : ""
-            }
-            {
-                deleteModal &&
-                <Modal titulo="Excluir Produto">
-                    <div className="mb-6">
-                        <p className="text-lg text-gray-200">Tem certeza que deseja excluir este produto?</p>
-                        <p className="text-sm text-gray-400 mt-2">Esta ação não poderá ser desfeita.</p>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <button
-                            type="button"
-                            className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
-                            onClick={() => setDeleteModal(false)}
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="button"
-                            className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600"
-                            onClick={() => {handleDeleteProduto()}}
-                        >
-                            Excluir
-                        </button>
-                    </div>
-                </Modal>
-            }
-            {
-                editModal &&
-                <Modal titulo="Editar Produto">
-                    <form>
-                        <div className="mb-4">
-                            <label className="block mb-1 text-gray-200">Título</label>
-                            <Input
-                                value={titulo}
-                                onChange={(e) => setTitulo(e.target.value)}
-                                type="text" className="w-full" placeholder="Nome do produto"
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block mb-1 text-gray-200">Imagem</label>
-                            <div className='flex'>
-                                <div>
-                                    {imagemProduto != "" ?
-                                        typeof imagemProduto === "string" ?
-                                            <img className='h-32' src={imagemProduto}></img>
-                                            :
-                                            <div className=' border-2 p-2 rounded-sm h-full border-dashed border-gray-300'>
-                                                <p className="text-sm text-white">Nova Imagem: {imagemProduto.name}</p>
-                                            </div>
-                                        :
-                                        <h1 className='text-sm text-stone-500'>O produto ainda não possui imagem</h1>
-                                    }
-                                </div>
-                                <div className="relative">
-                                    <label
-                                        htmlFor="edit-file-input"
-                                        className=" ml-4 p-4 flex items-center justify-center h-[50px] w-44 bg-orange-400 hover:bg-orange-600 text-white text-sm font-medium cursor-pointer rounded-md transition-colors"
-                                    >
-                                        Clique aqui para alterar a imagem
-                                        <input
-                                            type="file"
-                                            id="edit-file-input"
-                                            className="hidden"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                const fileName = e.target.files[0]?.name || "";
-                                                setImagemProduto(e.target.files[0]);
-                                            }}
-                                        />
-                                    </label>
-                                    {imagemProduto != "" ?
-                                        <button
-                                            id="edit-remove-btn"
-                                            onClick={e => {
-                                                e.preventDefault();
-                                                const fileInput = document.getElementById("edit-file-input");
-                                                fileInput.value = "";
-                                                document.getElementById("edit-remove-btn").style.display = "none";
-                                                setImagemProduto("")
-                                            }}
-                                            className="mt-4 ml-4 p-2 bg-gray-600 rounded-sm hover:bg-red-500 transition-all "
-                                            aria-label="Remover arquivo"
-                                        >
-                                            Remover Imagem
-                                        </button>
-                                        : ""
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                        <div className="mb-4">
-                            <label className="block mb-1 text-gray-200">Modo de Uso</label>
-                            <textarea
-                                value={modoUso}
-                                onChange={(e) => setModoUso(e.target.value)}
-                                className="w-full rounded border border-stone-700 bg-stone-900 text-gray-100 p-2" rows={3} placeholder="Modo de uso do produto"></textarea>
-                        </div>
-                        <div className="mb-4">
-                            <label className="block mb-1 text-gray-200 ">Especificações</label>
-                            {[...Array(usoFields?.length || 0)].map((_, i) => (
-                                <div
-                                    className="flex flex-row justify-between"
-                                    key={i}>
-                                    <Input
-                                        type="text"
-                                        className="w-[88%] mb-2"
-                                        placeholder={`Especificação #${i + 1}`}
-                                        value={usoFields[i]}
-                                        onChange={e => {
-                                            const updated = [...usoFields];
-                                            updated[i] = e.target.value;
-                                            setUsoFields(updated);
-                                        }}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="flex items-center justify-center text-red-400 hover:text-white hover:bg-red-400 transition-all rounded h-9 w-9"
-                                        onClick={() => {
-                                            const updated = usoFields.filter((_, idx) => idx !== i);
-                                            setUsoFields(updated);
-                                        }}
-                                        title="Remover especificação"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
-                            <button
-                                type="button"
-                                className={(usoFields.length >= 8 ? "bg-stone-700 text-stone-500" : "bg-orange-400 text-white hover:bg-orange-600") + (" px-3 py-1 rounded  text-sm hover:cursor-pointer")}
-                                disabled={usoFields.length >= 8}
-                                onClick={() => {
-                                    if (usoFields.length < 8) setUsoFields([...usoFields, ""]);
-                                }}
-                            >
-                                + Adicionar especificação
-                            </button>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <button
-                                type="button"
-                                className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
-                                onClick={() => {
-                                    setEditModal(false)
-                                    setTitulo("");
-                                    setModoUso("");
-                                    setUsoFields([""]);
-                                    setImagemProduto("");
-                                }}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { handleEditProduto() }}
-                                className="px-4 py-2 rounded bg-orange-400 text-white hover:bg-orange-600"
-                            >
-                                Salvar
-                            </button>
-                        </div>
-                    </form>
+                    </ScrollArea>
                 </Modal>
             }
         </div >

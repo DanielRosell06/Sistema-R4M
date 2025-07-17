@@ -12,7 +12,10 @@ cloudinary.config({
 export async function GET(request) {
     try {
         const produtos = await prisma.produto.findMany({
-            where: { status: "ativo" }
+            where: { status: "ativo" },
+            orderBy: {
+                titulo: 'asc' // ordena de A a Z
+            }
         });
 
         return new Response(
@@ -39,6 +42,7 @@ export async function POST(request) {
         const formData = await request.formData();
 
         const titulo = formData.get('titulo');
+        const subtitulo = formData.get('subtitulo');
         const descricao = formData.getAll('descricao');
         const modo_de_uso = formData.get('modo_de_uso');
         const imagem = formData.get('imagem');
@@ -80,6 +84,7 @@ export async function POST(request) {
         const novoProduto = await prisma.produto.create({
             data: {
                 titulo: titulo,
+                subTitulo: subtitulo,
                 descricao: JSON.stringify(descricao),
                 modo_de_uso: modo_de_uso,
                 // --- CORREÇÃO AQUI ---
@@ -160,6 +165,7 @@ export async function PUT(request) {
 
         const id = parseInt(formData.get('id'), 10);
         const titulo = formData.get('titulo');
+        const subtitulo = formData.get('subtitulo');
         const descricao = formData.getAll('descricao');
         const modo_de_uso = formData.get('modo_de_uso');
         const imagem = formData.get('imagem');
@@ -209,6 +215,7 @@ export async function PUT(request) {
         const novoProduto = await prisma.produto.update({
             data: {
                 titulo: titulo,
+                subTitulo: subtitulo,
                 descricao: JSON.stringify(descricao),
                 modo_de_uso: modo_de_uso,
                 // id_Categoria: -1, // Manter a lógica de categoria ao editar se necessário
