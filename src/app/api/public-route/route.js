@@ -16,8 +16,16 @@ export async function GET(request) {
 
         if (tipo == "categorias") {
             resultado = await prisma.categoria.findMany({
-                orderBy: { ranking: 'asc' },
-                include: { produtos: true }
+                orderBy: {
+                    ranking: 'asc'
+                },
+                include: {
+                    produtos: {
+                        orderBy: {
+                            ranking_categoria: 'asc'
+                        }
+                    }
+                }
             });
         }
 
