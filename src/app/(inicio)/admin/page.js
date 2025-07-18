@@ -264,7 +264,7 @@ export default function AdminPage() {
 
       {/* Modal de Edição */}
       {editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#00000050] flex items-center justify-center z-50 p-4">
           <div className="bg-stone-800 p-8 max-w-md w-full rounded-lg shadow-2xl border border-stone-700">
             <h2 className="text-2xl font-bold mb-6 text-center text-white">
               Editar <span className="text-orange-500">Usuário</span>
