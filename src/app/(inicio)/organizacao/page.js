@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Skeleton } from "../../../components/ui/skeleton";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import DraggableList from "../../../components/personalizados/listaCategorias";
 import ProductManager from "../../../components/personalizados/top10";
+import { Save, Check, Loader2 } from "lucide-react"; // Importar ícones
 
 // --- Componente para o Item do Produto (arrastável) ---
 function ProductItem({ product, index }) {
@@ -17,15 +18,10 @@ function ProductItem({ product, index }) {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          // Os estilos aplicados aqui são combinados com os estilos do react-beautiful-dnd.
-          // É crucial não sobrescrever propriedades de posicionamento e transição
-          // que a biblioteca gerencia para evitar comportamentos inesperados.
           style={{
             ...provided.draggableProps.style,
             opacity: snapshot.isDragging ? 0.5 : 1,
             zIndex: snapshot.isDragging ? 10 : 1,
-            // Removido 'transition' explícito para evitar conflitos
-            // O R-B-D já gerencia a transição de movimento.
           }}
           className="p-2 mb-2 bg-stone-700 rounded-md shadow-sm text-white flex items-center gap-3 cursor-grab active:cursor-grabbing"
         >
@@ -92,9 +88,15 @@ function CategoryColumn({ id, title, products, onDelete }) {
 // --- Página Principal de Organização ---
 export default function OrganizacaoPage() {
   const [columns, setColumns] = useState({});
+  const [initialColumns, setInitialColumns] = useState({}); // Guarda o estado inicial das colunas
   const [loading, setLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [loadData, setLoadData] = useState(-1);
+  const [hasChanges, setHasChanges] = useState(false); // Indica se há alterações não salvas
+  const [isLoading, setIsLoading] = useState(false); // Indica se está salvando
+  const [isSaved, setIsSaved] = useState(false); // Indica se as alterações foram salvas
+
+  const initialLoadRef = useRef(true); // Ref para controlar a primeira carga
 
   useEffect(() => {
     async function fetchData() {
@@ -135,6 +137,12 @@ export default function OrganizacaoPage() {
         });
 
         setColumns(orderedColumns);
+        if (initialLoadRef.current) {
+          setInitialColumns(orderedColumns); // Define o estado inicial apenas na primeira carga
+          initialLoadRef.current = false;
+        }
+        setHasChanges(false); // Reset das alterações ao carregar novos dados
+        setIsSaved(false); // Reset do estado salvo
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       } finally {
@@ -144,6 +152,40 @@ export default function OrganizacaoPage() {
     fetchData();
   }, [loadData]);
 
+  // Função para comparar se houve mudanças nas colunas e produtos
+  const checkForChanges = (currentCols, initialCols) => {
+    const currentKeys = Object.keys(currentCols);
+    const initialKeys = Object.keys(initialCols);
+
+    if (currentKeys.length !== initialKeys.length) return true;
+
+    for (const key of currentKeys) {
+      if (!initialCols[key]) return true; // Nova categoria adicionada
+
+      const currentProducts = currentCols[key].products;
+      const initialProducts = initialCols[key].products;
+
+      if (currentProducts.length !== initialProducts.length) return true;
+
+      for (let i = 0; i < currentProducts.length; i++) {
+        if (currentProducts[i].id !== initialProducts[i].id) {
+          return true; // Ordem ou produtos diferentes
+        }
+      }
+    }
+    return false;
+  };
+
+  // Efeito para verificar mudanças sempre que `columns` mudar
+  useEffect(() => {
+    if (!loading && !initialLoadRef.current) { // Garante que a comparação só ocorra após a carga inicial e se não estiver carregando
+      setHasChanges(checkForChanges(columns, initialColumns));
+      if (checkForChanges(columns, initialColumns)) {
+        setIsSaved(false); // Se houver mudanças, desativa o estado de "salvo"
+      }
+    }
+  }, [columns, initialColumns, loading]);
+
   function onDragEnd(result) {
     const { source, destination } = result;
 
@@ -151,7 +193,6 @@ export default function OrganizacaoPage() {
       return;
     }
 
-    // Se o item foi solto na mesma posição de onde veio, não faz nada
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
@@ -194,7 +235,6 @@ export default function OrganizacaoPage() {
     }));
   }
 
-
   async function handleCreateCategory() {
     if (!newCategoryName.trim()) return;
     try {
@@ -204,7 +244,7 @@ export default function OrganizacaoPage() {
         body: JSON.stringify({ titulo: newCategoryName }),
       });
       setNewCategoryName("");
-      setLoadData(Date.now());
+      setLoadData(Date.now()); // Força recarregamento de dados
     } catch {
       alert("Erro ao criar categoria");
     }
@@ -214,20 +254,25 @@ export default function OrganizacaoPage() {
     if (!confirm("Tem certeza que deseja excluir esta categoria? Os produtos serão movidos para 'Sem Categoria'.")) return;
     try {
       await fetch(`/api/inicio/categoria/${id}`, { method: 'DELETE' });
-      setLoadData(Date.now());
+      setLoadData(Date.now()); // Força recarregamento de dados
     } catch {
       alert("Erro ao excluir categoria.");
     }
   }
 
   async function handleSaveChanges() {
+    if (!hasChanges) return; // Não faz nada se não houver alterações
+
+    setIsLoading(true);
+    setIsSaved(false);
+
     const toUpdate = [];
     Object.entries(columns).forEach(([colId, col]) => {
       col.products.forEach((p, i) => {
         toUpdate.push({
           id: p.id,
           id_Categoria: Number(colId),
-          ranking_top: 0,
+          ranking_top: 0, // Manter como 0 ou ajustar conforme a lógica do backend
           ranking_categoria: i + 1,
         });
       });
@@ -240,9 +285,21 @@ export default function OrganizacaoPage() {
         body: JSON.stringify({ productsToUpdate: toUpdate }),
       });
       if (!res.ok) throw new Error("Falha ao salvar");
-      alert("Organização salva com sucesso!");
-    } catch {
+      await res.json(); // Consumir a resposta
+
+      setInitialColumns({ ...columns }); // Atualiza o estado inicial após salvar
+      setHasChanges(false);
+      setIsSaved(true);
+
+      setTimeout(() => {
+        setIsSaved(false);
+      }, 5000); // Exibe "Salvo!" por 5 segundos
+    } catch (error) {
+      console.error("Erro ao salvar alterações:", error);
       alert("Erro ao salvar alterações.");
+      setIsSaved(false); // Garante que o estado de salvo seja resetado em caso de erro
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -342,7 +399,7 @@ export default function OrganizacaoPage() {
       <div className='w-[100%] flex'>
         <div className='w-[55%]'>
           <div className='flex'>
-            <div className="mt-4 mb-4 p-4 bg-stone-800 rounded-lg flex gap-4 items-center w-[76%]">
+            <div className="mt-4 mb-4 p-4 bg-stone-800 rounded-lg flex gap-4 items-center w-[68%]">
               <Input
                 type="text"
                 placeholder="Nome da nova categoria"
@@ -353,9 +410,30 @@ export default function OrganizacaoPage() {
               <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={handleCreateCategory}>Criar Categoria</Button>
             </div>
             <Button
-              className="ml-[4%] w-[16%] mt-auto mb-auto bg-orange-500 hover:bg-orange-600"
-              onClick={handleSaveChanges}>
-              Salvar
+              className={`text-sm ml-[4%] w-[24%] mt-auto mb-auto px-8 py-2  font-semibold transition-colors ${
+                (!hasChanges || isLoading) ? "bg-stone-500 cursor-not-allowed" :
+                isSaved ? "bg-green-600 hover:bg-green-700" :
+                "bg-orange-500 hover:bg-orange-600"
+              }`}
+              onClick={handleSaveChanges}
+              disabled={!hasChanges || isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : isSaved ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Salvo!
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {hasChanges ? "Salvar" : "Sem Alterações"}
+                </>
+              )}
             </Button>
           </div>
           <DragDropContext onDragEnd={onDragEnd}>
