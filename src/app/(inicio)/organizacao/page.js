@@ -1,21 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-  useDroppable,
-  pointerWithin
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  arrayMove
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Skeleton } from "../../../components/ui/skeleton";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
@@ -23,40 +9,44 @@ import DraggableList from "../../../components/personalizados/listaCategorias";
 import ProductManager from "../../../components/personalizados/top10";
 
 // --- Componente para o Item do Produto (arrastável) ---
-function ProductItem({ product }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: product.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 1,
-  };
+function ProductItem({ product, index }) {
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="p-2 mb-2 bg-stone-700 rounded-md shadow-sm text-white flex items-center gap-3 cursor-grab active:cursor-grabbing"
-    >
-      {product.imagem ? (
-        <img
-          src={product.imagem}
-          alt={product.titulo}
-          className="w-10 h-10 object-cover rounded-sm flex-shrink-0"
-        />
-      ) : (
-        <div className="w-10 h-10 bg-stone-600 rounded-sm flex-shrink-0"></div>
+    <Draggable draggableId={product.id.toString()} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          // Os estilos aplicados aqui são combinados com os estilos do react-beautiful-dnd.
+          // É crucial não sobrescrever propriedades de posicionamento e transição
+          // que a biblioteca gerencia para evitar comportamentos inesperados.
+          style={{
+            ...provided.draggableProps.style,
+            opacity: snapshot.isDragging ? 0.5 : 1,
+            zIndex: snapshot.isDragging ? 10 : 1,
+            // Removido 'transition' explícito para evitar conflitos
+            // O R-B-D já gerencia a transição de movimento.
+          }}
+          className="p-2 mb-2 bg-stone-700 rounded-md shadow-sm text-white flex items-center gap-3 cursor-grab active:cursor-grabbing"
+        >
+          {product.imagem ? (
+            <img
+              src={product.imagem}
+              alt={product.titulo}
+              className="w-10 h-10 object-cover rounded-sm flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-stone-600 rounded-sm flex-shrink-0"></div>
+          )}
+          <span className="text-sm">{product.titulo}</span>
+        </div>
       )}
-      <span className="text-sm">{product.titulo}</span>
-    </div>
+    </Draggable>
   );
 }
 
 // --- Componente para a Coluna da Categoria (recebe os drops) ---
 function CategoryColumn({ id, title, products, onDelete }) {
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id });
   const validProducts = products.filter(p => p && p.id);
 
   return (
@@ -76,22 +66,25 @@ function CategoryColumn({ id, title, products, onDelete }) {
           </Button>
         )}
       </div>
-      <SortableContext id={id.toString()} items={validProducts.map(p => p.id)}>
-        {/* CORREÇÃO: Adicionado overflow-y-auto para o scroll */}
-        <div
-          ref={setDroppableRef}
-          className={`flex-grow bg-stone-900/50 p-2 rounded-md min-h-[100px] space-y-2 overflow-y-auto ${isOver ? 'ring-2 ring-offset-2 ring-orange-500' : ''}`}
-        >
-          {validProducts.map(p => (
-            <ProductItem key={p.id} product={p} />
-          ))}
-          {validProducts.length === 0 && (
-            <div className="text-sm text-stone-500 text-center pt-10">
-              Arraste produtos para esta categoria.
-            </div>
-          )}
-        </div>
-      </SortableContext>
+      <Droppable droppableId={id.toString()} type="column">
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={`flex-grow bg-stone-900/50 p-2 rounded-md min-h-[100px] space-y-2 overflow-y-auto ${snapshot.isDraggingOver ? 'ring-2 ring-offset-2 ring-orange-500' : ''}`}
+          >
+            {validProducts.map((p, index) => (
+              <ProductItem key={p.id} product={p} index={index} />
+            ))}
+            {provided.placeholder}
+            {validProducts.length === 0 && !snapshot.isDraggingOver && (
+              <div className="text-sm text-stone-500 text-center pt-10">
+                Arraste produtos para esta categoria.
+              </div>
+            )}
+          </div>
+        )}
+      </Droppable>
     </div>
   );
 }
@@ -101,14 +94,7 @@ export default function OrganizacaoPage() {
   const [columns, setColumns] = useState({});
   const [loading, setLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [activeProduct, setActiveProduct] = useState(null);
   const [loadData, setLoadData] = useState(-1);
-
-  const sensors = useSensors(useSensor(PointerSensor, {
-    activationConstraint: {
-      distance: 8,
-    },
-  }));
 
   useEffect(() => {
     async function fetchData() {
@@ -128,14 +114,12 @@ export default function OrganizacaoPage() {
 
         products.forEach(p => {
           if (!p || !p.id) return;
-          // MELHORIA: Garante que o produto vá para 'Sem Categoria' se sua categoria não existir
           const categoryId = p.id_Categoria && newColumns[p.id_Categoria] ? p.id_Categoria : 1;
           if (newColumns[categoryId]) {
             newColumns[categoryId].products.push(p);
           }
         });
 
-        // Ordena os produtos dentro de cada categoria pelo ranking
         Object.values(newColumns).forEach(col => {
           col.products.sort((a, b) => a.ranking_categoria - b.ranking_categoria);
         });
@@ -160,55 +144,56 @@ export default function OrganizacaoPage() {
     fetchData();
   }, [loadData]);
 
-  const findContainer = id => {
-    if (id in columns) return id;
-    return Object.keys(columns).find(key =>
-      columns[key].products.some(p => p.id === id)
-    );
-  };
+  function onDragEnd(result) {
+    const { source, destination } = result;
 
-  function handleDragStart(event) {
-    const product = Object.values(columns)
-      .flatMap(col => col.products)
-      .find(p => p.id === event.active.id);
-    setActiveProduct(product);
+    if (!destination) {
+      return;
+    }
+
+    // Se o item foi solto na mesma posição de onde veio, não faz nada
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      return;
+    }
+
+    const startColumn = columns[source.droppableId];
+    const endColumn = columns[destination.droppableId];
+
+    // Movendo dentro da mesma coluna
+    if (startColumn === endColumn) {
+      const newProducts = Array.from(startColumn.products);
+      const [movedProduct] = newProducts.splice(source.index, 1);
+      newProducts.splice(destination.index, 0, movedProduct);
+
+      setColumns(prev => ({
+        ...prev,
+        [source.droppableId]: {
+          ...startColumn,
+          products: newProducts,
+        },
+      }));
+      return;
+    }
+
+    // Movendo para uma coluna diferente
+    const startProducts = Array.from(startColumn.products);
+    const [movedProduct] = startProducts.splice(source.index, 1);
+    const endProducts = Array.from(endColumn.products);
+    endProducts.splice(destination.index, 0, movedProduct);
+
+    setColumns(prev => ({
+      ...prev,
+      [source.droppableId]: {
+        ...startColumn,
+        products: startProducts,
+      },
+      [destination.droppableId]: {
+        ...endColumn,
+        products: endProducts,
+      },
+    }));
   }
 
-  function handleDragEnd(event) {
-    const { active, over } = event;
-    setActiveProduct(null);
-
-    if (!over || active.id === over.id) return;
-
-    const fromContainerId = findContainer(active.id);
-    const toContainerId = findContainer(over.id) || over.id;
-
-    if (!fromContainerId || !toContainerId) return;
-
-    setColumns((prev) => {
-      const newCols = JSON.parse(JSON.stringify(prev));
-      const sourceProducts = newCols[fromContainerId].products;
-      const activeProductIndex = sourceProducts.findIndex(p => p.id === active.id);
-
-      if (activeProductIndex === -1) return prev;
-
-      const [movedItem] = sourceProducts.splice(activeProductIndex, 1);
-      const destProducts = newCols[toContainerId].products;
-      let overProductIndex;
-
-      if (over.id in newCols) {
-        // Dropping on container
-        overProductIndex = destProducts.length;
-      } else {
-        // Dropping on item
-        overProductIndex = destProducts.findIndex(p => p.id === over.id);
-      }
-
-      destProducts.splice(overProductIndex >= 0 ? overProductIndex : destProducts.length, 0, movedItem);
-
-      return newCols;
-    });
-  }
 
   async function handleCreateCategory() {
     if (!newCategoryName.trim()) return;
@@ -219,7 +204,7 @@ export default function OrganizacaoPage() {
         body: JSON.stringify({ titulo: newCategoryName }),
       });
       setNewCategoryName("");
-      setLoadData(Date.now()); // Força o reload dos dados
+      setLoadData(Date.now());
     } catch {
       alert("Erro ao criar categoria");
     }
@@ -229,7 +214,7 @@ export default function OrganizacaoPage() {
     if (!confirm("Tem certeza que deseja excluir esta categoria? Os produtos serão movidos para 'Sem Categoria'.")) return;
     try {
       await fetch(`/api/inicio/categoria/${id}`, { method: 'DELETE' });
-      setLoadData(Date.now()); // Força o reload dos dados
+      setLoadData(Date.now());
     } catch {
       alert("Erro ao excluir categoria.");
     }
@@ -239,12 +224,11 @@ export default function OrganizacaoPage() {
     const toUpdate = [];
     Object.entries(columns).forEach(([colId, col]) => {
       col.products.forEach((p, i) => {
-        // CORREÇÃO: Adicionado ranking_categoria para salvar a ordem
         toUpdate.push({
           id: p.id,
           id_Categoria: Number(colId),
-          ranking_top: 0, // Resetar ranking_top, já que esta tela não é para isso
-          ranking_categoria: i + 1, // Salva a ordem na categoria
+          ranking_top: 0,
+          ranking_categoria: i + 1,
         });
       });
     });
@@ -262,8 +246,6 @@ export default function OrganizacaoPage() {
     }
   }
 
-  // O restante do componente (JSX de loading e da página) permanece o mesmo...
-  // (O código foi omitido por brevidade, mas você deve mantê-lo como estava)
   if (loading) {
     return (
       <div className=" h-[100vh] flex-1 space-y-8 p-8 pt-6 bg-stone-900 text-stone-300">
@@ -376,19 +358,13 @@ export default function OrganizacaoPage() {
               Salvar
             </Button>
           </div>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={pointerWithin}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
+          <DragDropContext onDragEnd={onDragEnd}>
             <div className="flex gap-4 pb-4 w-[100%] flex-wrap">
               {Object.entries(columns).map(([id, col]) => (
                 <CategoryColumn key={id} id={id} title={col.title} products={col.products} onDelete={handleDeleteCategory} />
               ))}
             </div>
-            <DragOverlay>{activeProduct ? <ProductItem product={activeProduct} /> : null}</DragOverlay>
-          </DndContext>
+          </DragDropContext>
         </div>
         <div className='flex flex-col w-[45%]'>
           <DraggableList />
